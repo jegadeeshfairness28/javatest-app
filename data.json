@@ -1,0 +1,33 @@
+{
+  "apiUrl": "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE",
+  "mcqs": [
+    { "id": "q1", "question": "Which of these is not a Java primitive type?", "options": ["int", "float", "String", "char"] },
+    { "id": "q2", "question": "What is the default value of a boolean instance variable?", "options": ["true", "false", "0", "null"] },
+    { "id": "q3", "question": "Which keyword is used to inherit a class in Java?", "options": ["extends", "implements", "inherits", "super"] },
+    { "id": "q4", "question": "Which operator is used to compare two values for equality?", "options": ["=", "==", "===", "eq"] },
+    { "id": "q5", "question": "Which collection class does not allow duplicate elements?", "options": ["ArrayList", "LinkedList", "Vector", "HashSet"] },
+    { "id": "q6", "question": "What does JVM stand for?", "options": ["Java Verified Machine", "Java Virtual Machine", "Java Variable Method", "Java Visual Model"] },
+    { "id": "q7", "question": "Which keyword is used to prevent a class from being inherited?", "options": ["final", "static", "private", "abstract"] },
+    { "id": "q8", "question": "Which of these is used to handle exceptions in Java?", "options": ["try-catch", "if-else", "switch-case", "for-loop"] },
+    { "id": "q9", "question": "What is the size of an int in Java?", "options": ["8 bits", "16 bits", "64 bits", "32 bits"] },
+    { "id": "q10", "question": "Which method is the entry point of a Java program?", "options": ["start()", "main()", "run()", "init()"] },
+    { "id": "q11", "question": "Which of these is a valid way to create an array of 5 integers?", "options": ["int[] a = new int[5];", "int a[5];", "array int a = 5;", "int a = new array(5);"] },
+    { "id": "q12", "question": "Which loop is guaranteed to execute at least once?", "options": ["for", "while", "do-while", "foreach"] },
+    { "id": "q13", "question": "Which access modifier makes a member visible only within its own class?", "options": ["public", "protected", "private", "default"] },
+    { "id": "q14", "question": "Which interface must a class implement to be used with Java's Comparable sorting?", "options": ["Comparator", "Comparable", "Sortable", "Ordered"] },
+    { "id": "q15", "question": "What does the 'static' keyword mean for a method?", "options": ["It can only be called once", "It belongs to the class, not an instance", "It cannot be overridden", "It runs on a separate thread"] },
+    { "id": "q16", "question": "Which of these correctly declares a constant in Java?", "options": ["const int X = 5;", "final int X = 5;", "static X = 5;", "let X = 5;"] },
+    { "id": "q17", "question": "What is method overloading?", "options": ["Same method name, different parameters", "Same method name and parameters in a subclass", "Calling a method too many times", "A method that calls itself"] },
+    { "id": "q18", "question": "Which of these is used to create an object in Java?", "options": ["new", "create", "make", "object"] },
+    { "id": "q19", "question": "Which String method returns the number of characters in a string?", "options": ["size()", "count()", "length()", "len()"] },
+    { "id": "q20", "question": "What is the parent class of all classes in Java?", "options": ["Main", "Class", "Object", "Base"] }
+  ],
+  "coding": [
+    { "id": "c1", "title": "1. Sum of First N Natural Numbers", "description": "Read an integer N from input and print the sum of the first N natural numbers (1+2+...+N).\n\nExample: Input 5 -> Output 15", "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // TODO: compute and print the sum\n    }\n}" },
+    { "id": "c2", "title": "2. Prime Number Check", "description": "Read an integer N and print \"Prime\" if it is a prime number, otherwise print \"Not Prime\".\n\nExample: Input 7 -> Output Prime", "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // TODO: check primality and print \"Prime\" or \"Not Prime\"\n    }\n}" },
+    { "id": "c3", "title": "3. Reverse a String", "description": "Read a single word/string and print it reversed.\n\nExample: Input hello -> Output olleh", "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        // TODO: reverse and print s\n    }\n}" },
+    { "id": "c4", "title": "4. Factorial Using Recursion", "description": "Read an integer N and print its factorial using a recursive method.\n\nExample: Input 5 -> Output 120", "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    static long factorial(int n) {\n        // TODO: implement recursively\n        return 0;\n    }\n\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        System.out.println(factorial(n));\n    }\n}" },
+    { "id": "c5", "title": "5. Sort an Array", "description": "Read an integer N, then N integers. Print them sorted in ascending order, space-separated on one line.\n\nExample: Input 5 / 9 3 7 1 5 -> Output 1 3 5 7 9", "starterCode": "import java.util.Scanner;\nimport java.util.Arrays;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] arr = new int[n];\n        for (int i = 0; i < n; i++) arr[i] = sc.nextInt();\n        // TODO: sort arr and print space-separated\n    }\n}" },
+    { "id": "c6", "title": "6. Average and Grade (OOP)", "description": "Read 3 integer marks. Print two lines:\nAverage: <average, 1 decimal place>\nGrade: <A if avg>=90, B if avg>=75, C if avg>=60, D otherwise>\n\nExample: Input 90 85 95 -> Output:\nAverage: 90.0\nGrade: A", "starterCode": "import java.util.Scanner;\n\nclass Student {\n    int m1, m2, m3;\n    Student(int m1, int m2, int m3) {\n        this.m1 = m1; this.m2 = m2; this.m3 = m3;\n    }\n    double average() {\n        return (m1 + m2 + m3) / 3.0;\n    }\n    String grade() {\n        // TODO: return grade based on average()\n        return \"\";\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        Student s = new Student(sc.nextInt(), sc.nextInt(), sc.nextInt());\n        // TODO: print \"Average: X\" and \"Grade: Y\"\n    }\n}" }
+  ]
+}
