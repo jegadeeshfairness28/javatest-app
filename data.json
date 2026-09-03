@@ -323,16 +323,71 @@
         },
         {
           "id": "q2",
-          "question": "",
+          "question": "What is the index of the first element in a Java array?",
           "options": [
-            "",
-            "",
-            "",
-            ""
+            "0",
+            "1",
+            "-1",
+            "Depends on array size"
+          ]
+        },
+        {
+          "id": "q3",
+          "question": "Which loop is guaranteed to execute at least once?",
+          "options": [
+            "for",
+            "while",
+            "do while",
+            "enhanced for"
+          ]
+        },
+        {
+          "id": "q4",
+          "question": "What is the output?\n\nint a = 10;\nint b = 3;\nSystem.out.println(a / b);",
+          "options": [
+            "3.33",
+            "3",
+            "4",
+            "3.0"
+          ]
+        },
+        {
+          "id": "q5",
+          "question": "Which method is the entry point of a Java program?",
+          "options": [
+            "start()",
+            "run()",
+            "main()",
+            "execute()"
           ]
         }
       ],
-      "coding": []
+      "coding": [
+        {
+          "id": "c1",
+          "title": "Reverse a Number",
+          "description": "Write a Java program to read an integer and print its reverse.",
+          "starterCode": "",
+          "visibleTests": [
+            {
+              "input": "12345",
+              "expectedOutput": "54321"
+            }
+          ]
+        },
+        {
+          "id": "c2",
+          "title": "Find Minimum Element in an Array",
+          "description": "Write a Java program to read an array and find the minimum element in the array.",
+          "starterCode": "",
+          "visibleTests": [
+            {
+              "input": "5\n10 25 3 18 7",
+              "expectedOutput": "Minimum = 3"
+            }
+          ]
+        }
+      ]
     }
   }
 }
