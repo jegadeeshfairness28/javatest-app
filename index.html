@@ -193,7 +193,7 @@ async function checkLocalRunner() {
     throw new Error('bad response');
   } catch (e) {
     localRunnerAvailable = false;
-    el.textContent = '⚠ Local Java runner not detected. Start it (see instructions given by your instructor) before beginning, or Run & Check won\'t work — Submit will still work regardless.';
+    el.textContent = '⚠ Local Java runner not detected. Start it (see instructions from your instructor) before beginning, or Run & Check will not work — Submit will still work regardless.';
     el.className = 'runner-status runner-bad';
   }
 }
@@ -464,7 +464,8 @@ async function runCustom(qid) {
 
 function updateAnsweredCount() {
   const answered = Object.keys(state.mcqAnswers).length;
-  document.getElementById('answeredCount').textContent = `MCQ answered: ${answered}/${TEST.mcqs.length}`;
+  const codedCount = TEST.coding.filter(q => (state.codingCode[q.id] || '').trim() && state.codingCode[q.id] !== q.starterCode).length;
+  document.getElementById('answeredCount').textContent = `MCQ: ${answered}/${TEST.mcqs.length}  |  Coding touched: ${codedCount}/${TEST.coding.length}`;
 }
 
 function confirmSubmit() {
@@ -477,41 +478,117 @@ async function doSubmit(auto) {
   if (submitted) return;
   submitted = true;
   const btn = document.getElementById('finalSubmitBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Grading locally…'; }
   clearInterval(timerInterval);
   document.getElementById('fsOverlay').classList.add('hidden');
 
   TEST.coding.forEach(q => { if (cmEditors[q.id]) state.codingCode[q.id] = cmEditors[q.id].getValue(); });
   saveState();
 
+  let usedLocalGrading = false;
   try {
-    const resp = await fetch(SITE.apiUrl, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'submit', testId, rollNumber: student.roll, name: student.name,
-        mcqAnswers: state.mcqAnswers, codingCode: state.codingCode,
-        integrity: { warnings: state.warnings }
-      })
-    });
-    const data = await resp.json();
-    if (data.error || !data.ok) {
-      alert('Submission failed: ' + (data.error || data.saveError || 'unknown error') + '\nPlease try submitting again.');
-      submitted = false;
-      if (btn) { btn.disabled = false; btn.textContent = 'Submit Test'; }
-      return;
+    if (localRunnerAvailable) {
+      const graded = await gradeLocallyAndSubmit();
+      if (graded) usedLocalGrading = true;
     }
-    localStorage.setItem('javatest_submitted_' + testId + '_' + student.roll, JSON.stringify(data));
-    document.getElementById('testArea').classList.add('hidden');
-    document.getElementById('submitScreen').classList.remove('hidden');
-    document.getElementById('scoreDisplay').textContent = data.totalScore + ' / ' + data.maxScore;
-    document.getElementById('scoreBreak').textContent = 'MCQ: ' + data.mcqScore + '  |  Coding: ' + data.codingScore +
-      (data.saved ? '' : '  (Warning: result may not have saved — inform your instructor)');
-    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    if (!usedLocalGrading) {
+      if (btn) btn.textContent = 'Local runner unavailable — grading on server (slower)…';
+      await submitViaServerFallback();
+    }
   } catch (err) {
-    alert('Could not reach the server. Check your internet connection and try submitting again.');
+    alert('Submission failed: ' + err.message + '\nPlease try submitting again.');
     submitted = false;
     if (btn) { btn.disabled = false; btn.textContent = 'Submit Test'; }
   }
+}
+
+// FAST PATH: fetch the full answer key, grade with the student's own JDK,
+// send the already-computed score to the server just to store it.
+// NOTE: this means all test cases (including ones marked hidden) are
+// downloaded to the browser at submit time to run them locally — a
+// deliberate speed/trust trade-off chosen for this test.
+async function gradeLocallyAndSubmit() {
+  const gdResp = await fetch(SITE.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'getGradingData', testId }) });
+  const gd = await gdResp.json();
+  if (gd.error) throw new Error(gd.error);
+
+  const marks = gd.marksConfig || { mcqEach: 1, codingEach: 5 };
+
+  let mcqScore = 0;
+  const mcqDetail = {};
+  for (const qid in gd.mcqAnswers) {
+    const correct = gd.mcqAnswers[qid];
+    const given = Object.prototype.hasOwnProperty.call(state.mcqAnswers, qid) ? state.mcqAnswers[qid] : null;
+    const isRight = given === correct;
+    if (isRight) mcqScore += marks.mcqEach;
+    mcqDetail[qid] = { given, correct: isRight };
+  }
+
+  let codingScore = 0;
+  const codingDetail = {};
+  const btn = document.getElementById('finalSubmitBtn');
+  for (const cid in gd.codingTests) {
+    if (btn) btn.textContent = 'Grading ' + cid + ' locally…';
+    const code = state.codingCode[cid] || '';
+    const tests = gd.codingTests[cid];
+    let results;
+    try {
+      results = [];
+      for (const t of tests) {
+        const run = await callLocalRunner(code, t.input);
+        if (run.error) { results.push({ pass: false, error: run.error }); continue; }
+        const actual = (run.stdout || '').replace(/\s+$/, '');
+        const expected = (t.expectedOutput || '').replace(/\s+$/, '');
+        results.push({ pass: actual === expected, expected, actual, stderr: run.stderr || '' });
+      }
+    } catch (err) {
+      return false; // local runner dropped mid-grading — bail to server fallback
+    }
+    const allPass = results.length > 0 && results.every(r => r.pass);
+    if (allPass) codingScore += marks.codingEach;
+    codingDetail[cid] = { code, results, awarded: allPass ? marks.codingEach : 0 };
+  }
+
+  const totalScore = mcqScore + codingScore;
+  const maxScore = (Object.keys(gd.mcqAnswers).length * marks.mcqEach) + (Object.keys(gd.codingTests).length * marks.codingEach);
+
+  const resp = await fetch(SITE.apiUrl, {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'submitLocal', testId, rollNumber: student.roll, name: student.name,
+      mcqScore, codingScore, totalScore, maxScore, mcqDetail, codingDetail,
+      integrity: { warnings: state.warnings }
+    })
+  });
+  const data = await resp.json();
+  if (data.error || !data.ok) throw new Error(data.error || data.saveError || 'unknown error');
+  finishSubmit(data);
+  return true;
+}
+
+// SLOW FALLBACK: only used if the local runner isn't reachable at submit time.
+async function submitViaServerFallback() {
+  const resp = await fetch(SITE.apiUrl, {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'submit', testId, rollNumber: student.roll, name: student.name,
+      mcqAnswers: state.mcqAnswers, codingCode: state.codingCode,
+      integrity: { warnings: state.warnings }
+    })
+  });
+  const data = await resp.json();
+  if (data.error || !data.ok) throw new Error(data.error || data.saveError || 'unknown error');
+  finishSubmit(data);
+}
+
+function finishSubmit(data) {
+  localStorage.setItem('javatest_submitted_' + testId + '_' + student.roll, JSON.stringify(data));
+  document.getElementById('testArea').classList.add('hidden');
+  document.getElementById('submitScreen').classList.remove('hidden');
+  document.getElementById('scoreDisplay').textContent = data.totalScore + ' / ' + data.maxScore;
+  document.getElementById('scoreBreak').textContent = 'MCQ: ' + data.mcqScore + '  |  Coding: ' + data.codingScore +
+    (data.saved ? '' : '  (Warning: result may not have saved — inform your instructor)');
+  if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
 }
 </script>
 </body>
