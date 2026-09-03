@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java Programming Test</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+<style>
+  :root {
+    --ink: #1c2430; --paper: #f6f5f1; --panel: #ffffff; --line: #dcd9d0;
+    --accent: #2d5d4f; --accent-soft: #e4efe9; --warn: #a4402f; --warn-soft: #fbe9e6;
+    --mono: "Consolas", "Menlo", "Courier New", monospace;
+    --sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-touch-callout: none; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); line-height: 1.5; user-select: none; }
+  input, textarea, .CodeMirror { user-select: text; }
+  .topbar { position: sticky; top: 0; z-index: 10; background: var(--ink); color: #fff; padding: 10px 16px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .topbar .title { font-weight: 600; letter-spacing: .3px; }
+  .topbar .meta { font-size: 13px; opacity: .9; display: flex; gap: 14px; align-items: center; }
+  #timerDisplay { font-family: var(--mono); font-weight: 700; padding: 3px 10px; border-radius: 5px; background: rgba(255,255,255,.12); }
+  #timerDisplay.low { background: var(--warn); }
+  #warnDisplay { font-family: var(--mono); font-size: 12px; padding: 3px 8px; border-radius: 5px; background: rgba(255,255,255,.1); }
+  .container { max-width: 880px; margin: 0 auto; padding: 20px 16px 80px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+  h2 { margin-top: 0; font-size: 17px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #444; }
+  input[type=text], input[type=password] {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 15px; margin-bottom: 14px; font-family: var(--sans);
+  }
+  button { background: var(--accent); color: #fff; border: none; padding: 10px 18px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  button.secondary { background: var(--panel); color: var(--accent); border: 1px solid var(--accent); }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  .mcq-q { padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .mcq-q:last-child { border-bottom: none; }
+  .mcq-q .qtext { font-weight: 600; margin-bottom: 8px; }
+  .opt { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; }
+  .opt input { margin: 0; }
+  pre.desc { white-space: pre-wrap; font-family: var(--sans); background: var(--accent-soft); padding: 12px; border-radius: 8px; font-size: 14px; margin-bottom: 10px; }
+  .visible-tests { font-family: var(--mono); font-size: 12.5px; background: #efeee8; border: 1px dashed var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
+  .visible-tests .vt-row { padding: 4px 0; white-space: pre-wrap; }
+  .visible-tests b { font-family: var(--sans); }
+  .runner-status { font-size: 12.5px; padding: 6px 10px; border-radius: 6px; margin-bottom: 10px; display: inline-block; }
+  .runner-ok { background: var(--accent-soft); color: var(--accent); }
+  .runner-bad { background: var(--warn-soft); color: var(--warn); }
+  .cm-wrap { border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
+  .CodeMirror { height: 220px; font-family: var(--mono); font-size: 13.5px; }
+  .run-row { display: flex; gap: 10px; margin-top: 6px; align-items: center; flex-wrap: wrap; }
+  .custom-run { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 12px; }
+  .custom-run textarea { width: 100%; min-height: 60px; font-family: var(--mono); font-size: 13px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
+  .result-line { font-family: var(--mono); font-size: 13px; padding: 10px; border-radius: 6px; margin-top: 10px; white-space: pre-wrap; }
+  .result-pass { background: var(--accent-soft); color: var(--accent); }
+  .result-fail { background: var(--warn-soft); color: var(--warn); }
+  #submitScreen { text-align: center; padding: 40px 20px; }
+  #submitScreen .score { font-size: 40px; font-weight: 700; color: var(--accent); }
+  .hidden { display: none !important; }
+  .fs-overlay { position: fixed; inset: 0; background: rgba(20,24,30,.94); color: #fff; z-index: 999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; padding: 20px; }
+  .fs-overlay button { padding: 14px 26px; font-size: 16px; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--warn); color: #fff;
+    padding: 10px 18px; border-radius: 8px; font-size: 13.5px; z-index: 500; opacity: 0; transition: opacity .2s; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body oncontextmenu="return !testStarted;">
+
+<div class="topbar">
+  <div class="title">Java Programming Test</div>
+  <div class="meta">
+    <span id="whoami"></span>
+    <span id="answeredCount"></span>
+    <span id="warnDisplay" class="hidden"></span>
+    <span id="timerDisplay" class="hidden"></span>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="card" id="loadingCard">
+    <h2>Loading test…</h2>
+    <p style="color:#666;font-size:14px;">Fetching the latest questions from GitHub.</p>
+  </div>
+
+  <div class="card hidden" id="passwordCard">
+    <h2 id="testTitle">Enter test password</h2>
+    <label for="pwInput">Password (given by your instructor)</label>
+    <input type="password" id="pwInput" autocomplete="off">
+    <button onclick="checkPassword()">Continue</button>
+    <div id="pwError" style="color:var(--warn);font-size:13px;margin-top:8px;"></div>
+  </div>
+
+  <div class="card hidden" id="loginCard">
+    <h2>Enter your details to begin</h2>
+    <label for="rollInput">Roll Number</label>
+    <input type="text" id="rollInput" autocomplete="off">
+    <label for="nameInput">Full Name</label>
+    <input type="text" id="nameInput" autocomplete="off">
+    <div id="runnerCheck" class="runner-status">Checking for local Java runner…</div>
+    <button onclick="startTest()">Start Test (enters fullscreen)</button>
+    <p style="font-size:13px;color:#666;margin-top:10px;">
+      The timer starts the moment you click Start and cannot be paused. Copy/paste and right-click
+      are disabled, and the test runs in fullscreen — leaving it counts as a warning; too many
+      warnings auto-submits your test.
+    </p>
+  </div>
+
+  <div id="testArea" class="hidden">
+    <div class="card">
+      <h2>Section A — Multiple Choice</h2>
+      <div id="mcqList"></div>
+    </div>
+    <div id="codingList"></div>
+    <div class="card" style="text-align:center;">
+      <button id="finalSubmitBtn" onclick="confirmSubmit()">Submit Test</button>
+      <p style="font-size:13px;color:#666;margin-top:10px;">Once submitted, you cannot change your answers.</p>
+    </div>
+  </div>
+
+  <div id="submitScreen" class="card hidden">
+    <div>Test submitted</div>
+    <div class="score" id="scoreDisplay"></div>
+    <div id="scoreBreak" style="color:#555;"></div>
+  </div>
+
+</div>
+
+<div id="fsOverlay" class="fs-overlay hidden">
+  <div style="font-size:18px;font-weight:600;">You left fullscreen</div>
+  <div id="fsWarnText" style="opacity:.85;max-width:360px;"></div>
+  <button onclick="reEnterFullscreen()">Return to Fullscreen</button>
+</div>
+<div id="toast" class="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script>
+const LOCAL_RUNNER_URL = 'http://localhost:8089/run';
+let SITE = null, testId = null, TEST = null;
+let student = null, storeKey = null;
+let state = { mcqAnswers: {}, codingCode: {}, startTime: null, warnings: 0 };
+let cmEditors = {};
+let timerInterval = null;
+let submitted = false;
+let testStarted = false;
+let localRunnerAvailable = false;
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+function getTestIdFromUrl() { return new URLSearchParams(window.location.search).get('test'); }
+
+async function init() {
+  testId = getTestIdFromUrl();
+  try {
+    const resp = await fetch('data.json?_=' + Date.now());
+    SITE = await resp.json();
+    if (!testId || !SITE.tests || !SITE.tests[testId]) {
+      document.getElementById('loadingCard').innerHTML =
+        '<h2>Test not found</h2><p style="color:#a4402f;">This link is missing or has an invalid test ID. Ask your instructor for the correct link.</p>';
+      return;
+    }
+    TEST = SITE.tests[testId];
+    document.getElementById('testTitle').textContent = TEST.title || 'Enter test password';
+    document.getElementById('loadingCard').classList.add('hidden');
+    document.getElementById('passwordCard').classList.remove('hidden');
+    checkLocalRunner();
+  } catch (err) {
+    document.getElementById('loadingCard').innerHTML =
+      '<h2>Could not load the test</h2><p style="color:#a4402f;">Check your internet connection and reload this page.</p>';
+  }
+}
+init();
+
+async function checkLocalRunner() {
+  const el = document.getElementById('runnerCheck');
+  try {
+    const resp = await fetch('http://localhost:8089/', { method: 'GET' });
+    if (resp.ok) {
+      localRunnerAvailable = true;
+      el.textContent = '✓ Local Java runner detected — Run & Check will be fast.';
+      el.className = 'runner-status runner-ok';
+      return;
+    }
+    throw new Error('bad response');
+  } catch (e) {
+    localRunnerAvailable = false;
+    el.textContent = '⚠ Local Java runner not detected. Start it (see instructions given by your instructor) before beginning, or Run & Check won\\'t work — Submit will still work regardless.';
+    el.className = 'runner-status runner-bad';
+  }
+}
+
+async function checkPassword() {
+  const pw = document.getElementById('pwInput').value;
+  const errEl = document.getElementById('pwError');
+  errEl.textContent = '';
+  try {
+    const resp = await fetch(SITE.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'verifyAccess', testId, password: pw }) });
+    const data = await resp.json();
+    if (data.ok) {
+      document.getElementById('passwordCard').classList.add('hidden');
+      document.getElementById('loginCard').classList.remove('hidden');
+    } else {
+      errEl.textContent = 'Incorrect password.';
+    }
+  } catch (err) {
+    errEl.textContent = 'Could not verify password — check your internet connection.';
+  }
+}
+
+function loadState() {
+  const raw = localStorage.getItem(storeKey);
+  if (raw) { try { state = JSON.parse(raw); } catch (e) {} }
+  if (!state.mcqAnswers) state.mcqAnswers = {};
+  if (!state.codingCode) state.codingCode = {};
+  if (state.warnings == null) state.warnings = 0;
+}
+function saveState() { localStorage.setItem(storeKey, JSON.stringify(state)); }
+
+function startTest() {
+  const roll = document.getElementById('rollInput').value.trim();
+  const name = document.getElementById('nameInput').value.trim();
+  if (!roll || !name) { alert('Please enter both roll number and name.'); return; }
+
+  const submittedKey = 'javatest_submitted_' + testId + '_' + roll;
+  if (localStorage.getItem(submittedKey)) { showAlreadySubmitted(localStorage.getItem(submittedKey)); return; }
+
+  student = { roll, name };
+  storeKey = 'javatest_progress_' + testId + '_' + roll;
+  loadState();
+  if (!state.startTime) { state.startTime = Date.now(); saveState(); }
+
+  document.getElementById('loginCard').classList.add('hidden');
+  document.getElementById('testArea').classList.remove('hidden');
+  document.getElementById('whoami').textContent = name + ' (' + roll + ')';
+  document.getElementById('warnDisplay').classList.remove('hidden');
+  updateWarnDisplay();
+
+  testStarted = true;
+  requestFullscreen();
+  renderMCQs();
+  renderCoding();
+  updateAnsweredCount();
+  startTimer();
+  setupIntegrityWatchers();
+}
+
+function showAlreadySubmitted(raw) {
+  let data; try { data = JSON.parse(raw); } catch (e) { data = null; }
+  document.getElementById('loginCard').classList.add('hidden');
+  document.getElementById('submitScreen').classList.remove('hidden');
+  if (data) {
+    document.getElementById('scoreDisplay').textContent = data.totalScore + ' / ' + data.maxScore;
+    document.getElementById('scoreBreak').textContent = 'MCQ: ' + data.mcqScore + '  |  Coding: ' + data.codingScore;
+  } else {
+    document.getElementById('scoreDisplay').textContent = 'Already submitted';
+  }
+}
+
+// ============ Fullscreen + warnings ============
+function requestFullscreen() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+  if (req) req.call(el).catch(() => {});
+}
+function reEnterFullscreen() {
+  document.getElementById('fsOverlay').classList.add('hidden');
+  requestFullscreen();
+}
+function addWarning(reason) {
+  if (submitted) return;
+  state.warnings++;
+  saveState();
+  updateWarnDisplay();
+  const max = TEST.maxWarnings || 3;
+  if (state.warnings >= max) {
+    alert('Maximum warnings (' + max + ') reached. Your test is being submitted automatically.');
+    doSubmit(true);
+  }
+}
+function updateWarnDisplay() {
+  const max = TEST.maxWarnings || 3;
+  document.getElementById('warnDisplay').textContent = 'Warnings: ' + state.warnings + '/' + max;
+}
+function setupIntegrityWatchers() {
+  document.addEventListener('fullscreenchange', () => {
+    if (submitted) return;
+    if (!document.fullscreenElement) {
+      addWarning('fullscreen-exit');
+      if (!submitted) {
+        document.getElementById('fsWarnText').textContent =
+          'Warning ' + state.warnings + ' of ' + (TEST.maxWarnings || 3) + '. Reaching the limit auto-submits your test.';
+        document.getElementById('fsOverlay').classList.remove('hidden');
+      }
+    }
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (submitted) return;
+    if (document.hidden) addWarning('tab-switch');
+  });
+  document.addEventListener('copy', (e) => { if (testStarted) { e.preventDefault(); showToast('Copying is disabled during the test.'); } });
+  document.addEventListener('paste', (e) => { if (testStarted) { e.preventDefault(); showToast('Pasting is disabled during the test.'); } });
+  document.addEventListener('cut', (e) => { if (testStarted) { e.preventDefault(); } });
+}
+
+// ============ Timer ============
+function startTimer() {
+  const durationMs = (TEST.durationMinutes || 60) * 60000;
+  const el = document.getElementById('timerDisplay');
+  el.classList.remove('hidden');
+  function tick() {
+    const remaining = state.startTime + durationMs - Date.now();
+    if (remaining <= 0) {
+      el.textContent = '00:00';
+      clearInterval(timerInterval);
+      if (!submitted) { alert('Time is up. Submitting your test now.'); doSubmit(true); }
+      return;
+    }
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.floor((remaining % 60000) / 1000);
+    el.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+    el.classList.toggle('low', remaining < 5 * 60000);
+  }
+  tick();
+  timerInterval = setInterval(tick, 1000);
+}
+
+// ============ MCQs ============
+function renderMCQs() {
+  const list = document.getElementById('mcqList');
+  list.innerHTML = '';
+  TEST.mcqs.forEach((q, idx) => {
+    const div = document.createElement('div');
+    div.className = 'mcq-q';
+    const saved = state.mcqAnswers[q.id];
+    let optsHtml = '';
+    q.options.forEach((opt, i) => {
+      const checked = saved === i ? 'checked' : '';
+      optsHtml += `<label class="opt"><input type="radio" name="${q.id}" value="${i}" ${checked} onchange="setMcqAnswer('${q.id}', ${i})"> ${escapeHtml(opt)}</label>`;
+    });
+    div.innerHTML = `<div class="qtext">${idx + 1}. ${escapeHtml(q.question)}</div>${optsHtml}`;
+    list.appendChild(div);
+  });
+}
+function setMcqAnswer(qid, idx) { state.mcqAnswers[qid] = idx; saveState(); updateAnsweredCount(); }
+
+// ============ Coding ============
+function renderCoding() {
+  const container = document.getElementById('codingList');
+  container.innerHTML = '';
+  TEST.coding.forEach((q) => {
+    const savedCode = state.codingCode[q.id] || q.starterCode;
+    const card = document.createElement('div');
+    card.className = 'card';
+    let visHtml = '';
+    if (q.visibleTests && q.visibleTests.length) {
+      visHtml = '<div class="visible-tests"><b>Sample test cases (for your own checking)</b>';
+      q.visibleTests.forEach((t, i) => {
+        visHtml += `<div class="vt-row">Test ${i+1} — Input: ${escapeHtml(t.input)} | Expected: ${escapeHtml(t.expectedOutput)}</div>`;
+      });
+      visHtml += '</div>';
+    }
+    card.innerHTML = `
+      <h2>${escapeHtml(q.title)}</h2>
+      <pre class="desc">${escapeHtml(q.description)}</pre>
+      ${visHtml}
+      <div class="cm-wrap" id="cmwrap_${q.id}"></div>
+      <div class="run-row">
+        <button class="secondary" onclick="runVisibleTests('${q.id}')">Run &amp; Check Sample Tests</button>
+        <span id="runstatus_${q.id}" style="font-size:13px;color:#666;"></span>
+      </div>
+      <div id="result_${q.id}"></div>
+      <div class="custom-run">
+        <label>Or try your own input (just runs your code, no pass/fail check)</label>
+        <textarea id="custominput_${q.id}" placeholder="Type input here, one value per line as your program expects"></textarea>
+        <div class="run-row">
+          <button class="secondary" onclick="runCustom('${q.id}')">Run With This Input</button>
+          <span id="customstatus_${q.id}" style="font-size:13px;color:#666;"></span>
+        </div>
+        <div id="customresult_${q.id}"></div>
+      </div>
+    `;
+    container.appendChild(card);
+
+    const cm = CodeMirror(document.getElementById('cmwrap_' + q.id), {
+      value: savedCode, mode: 'text/x-java', theme: 'dracula', lineNumbers: true,
+      matchBrackets: true, autoCloseBrackets: true, indentUnit: 4, tabSize: 4,
+      extraKeys: { Tab: (inst) => inst.replaceSelection('    ', 'end') }
+    });
+    cm.on('beforeChange', (instance, change) => {
+      if (change.origin === 'paste') { change.cancel(); showToast('Pasting is disabled during the test.'); }
+    });
+    cm.on('change', () => { state.codingCode[q.id] = cm.getValue(); saveState(); });
+    cmEditors[q.id] = cm;
+  });
+}
+
+async function callLocalRunner(code, stdin) {
+  const resp = await fetch(LOCAL_RUNNER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ code, stdin }).toString()
+  });
+  if (!resp.ok) throw new Error('Local runner returned ' + resp.status);
+  return await resp.json();
+}
+
+async function runVisibleTests(qid) {
+  const q = TEST.coding.find(c => c.id === qid);
+  const code = cmEditors[qid].getValue();
+  const statusEl = document.getElementById('runstatus_' + qid);
+  const resultEl = document.getElementById('result_' + qid);
+  resultEl.innerHTML = '';
+  if (!q.visibleTests || !q.visibleTests.length) {
+    resultEl.innerHTML = '<div class="result-line">No sample test cases provided for this question.</div>';
+    return;
+  }
+  statusEl.textContent = 'Running on your local JDK…';
+  let html = '';
+  for (let i = 0; i < q.visibleTests.length; i++) {
+    const t = q.visibleTests[i];
+    try {
+      const run = await callLocalRunner(code, t.input);
+      if (run.error) {
+        html += `<div class="result-line result-fail">Test ${i+1}: ERROR\n${escapeHtml(run.error)}</div>`;
+        continue;
+      }
+      const actual = (run.stdout || '').replace(/\s+$/, '');
+      const expected = (t.expectedOutput || '').replace(/\s+$/, '');
+      if (actual === expected) html += `<div class="result-line result-pass">Test ${i+1}: PASSED</div>`;
+      else html += `<div class="result-line result-fail">Test ${i+1}: FAILED\nExpected: ${escapeHtml(expected)}\nGot: ${escapeHtml(actual)}${run.stderr ? '\n' + escapeHtml(run.stderr) : ''}</div>`;
+    } catch (err) {
+      html += `<div class="result-line result-fail">Test ${i+1}: Could not reach your local Java runner. Make sure LocalRunner is running (see instructions), then try again.</div>`;
+    }
+  }
+  statusEl.textContent = '';
+  resultEl.innerHTML = html;
+}
+
+async function runCustom(qid) {
+  const code = cmEditors[qid].getValue();
+  const stdin = document.getElementById('custominput_' + qid).value;
+  const statusEl = document.getElementById('customstatus_' + qid);
+  const resultEl = document.getElementById('customresult_' + qid);
+  statusEl.textContent = 'Running…'; resultEl.innerHTML = '';
+  try {
+    const run = await callLocalRunner(code, stdin);
+    statusEl.textContent = '';
+    if (run.error) { resultEl.innerHTML = `<div class="result-line result-fail">${escapeHtml(run.error)}</div>`; return; }
+    resultEl.innerHTML = `<div class="result-line">Output:\n${escapeHtml(run.stdout || '(no output)')}${run.stderr ? '\n\nErrors:\n' + escapeHtml(run.stderr) : ''}</div>`;
+  } catch (err) {
+    statusEl.textContent = '';
+    resultEl.innerHTML = '<div class="result-line result-fail">Could not reach your local Java runner. Make sure LocalRunner is running.</div>';
+  }
+}
+
+function updateAnsweredCount() {
+  const answered = Object.keys(state.mcqAnswers).length;
+  document.getElementById('answeredCount').textContent = `MCQ answered: ${answered}/${TEST.mcqs.length}`;
+}
+
+function confirmSubmit() {
+  const answered = Object.keys(state.mcqAnswers).length;
+  const msg = `You have answered ${answered}/${TEST.mcqs.length} MCQs. Once submitted, you cannot make changes. Submit now?`;
+  if (confirm(msg)) doSubmit(false);
+}
+
+async function doSubmit(auto) {
+  if (submitted) return;
+  submitted = true;
+  const btn = document.getElementById('finalSubmitBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+  clearInterval(timerInterval);
+  document.getElementById('fsOverlay').classList.add('hidden');
+
+  TEST.coding.forEach(q => { if (cmEditors[q.id]) state.codingCode[q.id] = cmEditors[q.id].getValue(); });
+  saveState();
+
+  try {
+    const resp = await fetch(SITE.apiUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'submit', testId, rollNumber: student.roll, name: student.name,
+        mcqAnswers: state.mcqAnswers, codingCode: state.codingCode,
+        integrity: { warnings: state.warnings }
+      })
+    });
+    const data = await resp.json();
+    if (data.error || !data.ok) {
+      alert('Submission failed: ' + (data.error || data.saveError || 'unknown error') + '\nPlease try submitting again.');
+      submitted = false;
+      if (btn) { btn.disabled = false; btn.textContent = 'Submit Test'; }
+      return;
+    }
+    localStorage.setItem('javatest_submitted_' + testId + '_' + student.roll, JSON.stringify(data));
+    document.getElementById('testArea').classList.add('hidden');
+    document.getElementById('submitScreen').classList.remove('hidden');
+    document.getElementById('scoreDisplay').textContent = data.totalScore + ' / ' + data.maxScore;
+    document.getElementById('scoreBreak').textContent = 'MCQ: ' + data.mcqScore + '  |  Coding: ' + data.codingScore +
+      (data.saved ? '' : '  (Warning: result may not have saved — inform your instructor)');
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+  } catch (err) {
+    alert('Could not reach the server. Check your internet connection and try submitting again.');
+    submitted = false;
+    if (btn) { btn.disabled = false; btn.textContent = 'Submit Test'; }
+  }
+}
+</script>
+</body>
+</html>
