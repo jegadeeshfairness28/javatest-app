@@ -305,6 +305,34 @@
           ]
         }
       ]
+    },
+    "batch2": {
+      "title": "Java test sample",
+      "durationMinutes": 30,
+      "maxWarnings": 4,
+      "mcqs": [
+        {
+          "id": "q1",
+          "question": "Which keyword is used to create an object in Java?",
+          "options": [
+            "class",
+            "new",
+            "this",
+            "object"
+          ]
+        },
+        {
+          "id": "q2",
+          "question": "",
+          "options": [
+            "",
+            "",
+            "",
+            ""
+          ]
+        }
+      ],
+      "coding": []
     }
   }
 }
