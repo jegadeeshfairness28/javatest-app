@@ -193,7 +193,7 @@ async function checkLocalRunner() {
     throw new Error('bad response');
   } catch (e) {
     localRunnerAvailable = false;
-    el.textContent = '⚠ Local Java runner not detected. Start it (see instructions given by your instructor) before beginning, or Run & Check won\\'t work — Submit will still work regardless.';
+    el.textContent = '⚠ Local Java runner not detected. Start it (see instructions given by your instructor) before beginning, or Run & Check won\'t work — Submit will still work regardless.';
     el.className = 'runner-status runner-bad';
   }
 }
