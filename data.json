@@ -388,6 +388,37 @@
           ]
         }
       ]
+    },
+    "batch3": {
+      "title": "sample 1 batch 3",
+      "durationMinutes": 60,
+      "maxWarnings": 3,
+      "mcqs": [
+        {
+          "id": "q1",
+          "question": "choose extend",
+          "options": [
+            "imple",
+            "extend",
+            "hello",
+            "hi"
+          ]
+        }
+      ],
+      "coding": [
+        {
+          "id": "c1",
+          "title": "sum of 2 numbers",
+          "description": "Get two numbers and print the sum value",
+          "starterCode": "class",
+          "visibleTests": [
+            {
+              "input": "2 4",
+              "expectedOutput": "6"
+            }
+          ]
+        }
+      ]
     }
   }
 }
