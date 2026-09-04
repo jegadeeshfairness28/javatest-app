@@ -391,7 +391,7 @@
     },
     "batch3": {
       "title": "sample 1 batch 3",
-      "durationMinutes": 60,
+      "durationMinutes": 2,
       "maxWarnings": 3,
       "mcqs": [
         {
