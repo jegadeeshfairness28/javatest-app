@@ -80,7 +80,7 @@
 
   <div class="card" id="loadingCard">
     <h2>Loading test…</h2>
-    <p style="color:#666;font-size:14px;">Fetching the latest questions from GitHub.</p>
+    <p style="color:#666;font-size:14px;">Fetching the latest test questions…</p>
   </div>
 
   <div class="card hidden" id="passwordCard">
@@ -437,6 +437,16 @@ async function callLocalRunner(code, stdin) {
   return await resp.json();
 }
 
+let gradingDataCache = null;
+async function ensureGradingData() {
+  if (gradingDataCache) return gradingDataCache;
+  const resp = await fetch(SITE.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'getGradingData', testId }) });
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error);
+  gradingDataCache = data;
+  return data;
+}
+
 async function runVisibleTests(qid) {
   const q = TEST.coding.find(c => c.id === qid);
   const code = cmEditors[qid].getValue();
@@ -465,6 +475,28 @@ async function runVisibleTests(qid) {
       html += `<div class="result-line result-fail">Test ${i+1}: Could not reach your local Java runner. Make sure LocalRunner is running (see instructions), then try again.</div>`;
     }
   }
+
+  // Best-effort: also check against the full grading test set (hidden included)
+  // so students get an honest signal now, not only after Submit. Only a
+  // pass count is shown — never the actual hidden input/output.
+  try {
+    const gd = await ensureGradingData();
+    const allTests = gd.codingTests[qid] || [];
+    let passCount = 0;
+    for (const t of allTests) {
+      const run = await callLocalRunner(code, t.input);
+      if (!run.error) {
+        const actual = (run.stdout || '').replace(/\s+$/, '');
+        const expected = (t.expectedOutput || '').replace(/\s+$/, '');
+        if (actual === expected) passCount++;
+      }
+    }
+    const allPass = passCount === allTests.length;
+    html += `<div class="result-line ${allPass ? 'result-pass' : 'result-fail'}">Full check (includes hidden tests): ${passCount}/${allTests.length} passed${allPass ? '' : ' — this would not get full marks yet'}</div>`;
+  } catch (err) {
+    // silently skip the full check if grading data can't be fetched right now
+  }
+
   statusEl.textContent = '';
   resultEl.innerHTML = html;
 }
@@ -533,9 +565,7 @@ async function doSubmit(auto) {
 // downloaded to the browser at submit time to run them locally — a
 // deliberate speed/trust trade-off chosen for this test.
 async function gradeLocallyAndSubmit() {
-  const gdResp = await fetch(SITE.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'getGradingData', testId }) });
-  const gd = await gdResp.json();
-  if (gd.error) throw new Error(gd.error);
+  const gd = await ensureGradingData();
 
   const marks = gd.marksConfig || { mcqEach: 1, codingEach: 5 };
 
