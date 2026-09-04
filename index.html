@@ -98,7 +98,12 @@
     <label for="nameInput">Full Name</label>
     <input type="text" id="nameInput" autocomplete="off">
     <div id="runnerCheck" class="runner-status">Checking for local Java runner…</div>
-    <button onclick="startTest()">Start Test (enters fullscreen)</button>
+    <button class="secondary" onclick="checkLocalRunner()" id="recheckBtn" style="margin-bottom:10px;">Check Again</button>
+    <button onclick="startTest()" id="startTestBtn" disabled>Start Test (enters fullscreen)</button>
+    <p id="runnerBlockNote" style="font-size:12.5px;color:var(--warn);margin-top:6px;">
+      Start Test is disabled until your local Java runner is detected. Make sure you ran
+      <code>java LocalRunner</code> and it shows "listening on http://localhost:8089/", then click "Check Again".
+    </p>
     <p style="font-size:13px;color:#666;margin-top:10px;">
       The timer starts the moment you click Start and cannot be paused. Copy/paste and right-click
       are disabled, and the test runs in fullscreen — leaving it counts as a warning; too many
@@ -180,21 +185,31 @@ async function init() {
 }
 init();
 
+let runnerPollInterval = null;
+
 async function checkLocalRunner() {
   const el = document.getElementById('runnerCheck');
+  const startBtn = document.getElementById('startTestBtn');
+  const note = document.getElementById('runnerBlockNote');
   try {
     const resp = await fetch('http://localhost:8089/', { method: 'GET' });
     if (resp.ok) {
       localRunnerAvailable = true;
-      el.textContent = '✓ Local Java runner detected — Run & Check will be fast.';
+      el.textContent = '✓ Local Java runner detected — you can start.';
       el.className = 'runner-status runner-ok';
+      startBtn.disabled = false;
+      note.classList.add('hidden');
+      if (runnerPollInterval) { clearInterval(runnerPollInterval); runnerPollInterval = null; }
       return;
     }
     throw new Error('bad response');
   } catch (e) {
     localRunnerAvailable = false;
-    el.textContent = '⚠ Local Java runner not detected. Start it (see instructions from your instructor) before beginning, or Run & Check will not work — Submit will still work regardless.';
+    el.textContent = '⚠ Local Java runner not detected.';
     el.className = 'runner-status runner-bad';
+    startBtn.disabled = true;
+    note.classList.remove('hidden');
+    if (!runnerPollInterval) runnerPollInterval = setInterval(checkLocalRunner, 4000);
   }
 }
 
@@ -225,13 +240,22 @@ function loadState() {
 }
 function saveState() { localStorage.setItem(storeKey, JSON.stringify(state)); }
 
-function startTest() {
+async function startTest() {
   const roll = document.getElementById('rollInput').value.trim();
   const name = document.getElementById('nameInput').value.trim();
   if (!roll || !name) { alert('Please enter both roll number and name.'); return; }
 
-  const submittedKey = 'javatest_submitted_' + testId + '_' + roll;
-  if (localStorage.getItem(submittedKey)) { showAlreadySubmitted(localStorage.getItem(submittedKey)); return; }
+  const startBtn = document.getElementById('startTestBtn');
+  startBtn.disabled = true; startBtn.textContent = 'Checking…';
+  try {
+    const resp = await fetch(SITE.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'checkSubmitted', testId, rollNumber: roll }) });
+    const data = await resp.json();
+    if (data.submitted) { showAlreadySubmitted(data.record); return; }
+  } catch (err) {
+    // if the check itself fails (offline etc.), fall through and let them try —
+    // Submit will still be checked server-side again at that point via checkSubmitted-equivalent logic if needed
+  }
+  startBtn.disabled = false; startBtn.textContent = 'Start Test (enters fullscreen)';
 
   student = { roll, name };
   storeKey = 'javatest_progress_' + testId + '_' + roll;
@@ -253,13 +277,13 @@ function startTest() {
   setupIntegrityWatchers();
 }
 
-function showAlreadySubmitted(raw) {
-  let data; try { data = JSON.parse(raw); } catch (e) { data = null; }
+function showAlreadySubmitted(data) {
   document.getElementById('loginCard').classList.add('hidden');
   document.getElementById('submitScreen').classList.remove('hidden');
   if (data) {
     document.getElementById('scoreDisplay').textContent = data.totalScore + ' / ' + data.maxScore;
-    document.getElementById('scoreBreak').textContent = 'MCQ: ' + data.mcqScore + '  |  Coding: ' + data.codingScore;
+    document.getElementById('scoreBreak').textContent = 'MCQ: ' + data.mcqScore + '  |  Coding: ' + data.codingScore +
+      '\n\nYou have already submitted this test. If you believe this is wrong, contact your instructor.';
   } else {
     document.getElementById('scoreDisplay').textContent = 'Already submitted';
   }
@@ -398,7 +422,7 @@ function renderCoding() {
     cm.on('beforeChange', (instance, change) => {
       if (change.origin === 'paste') { change.cancel(); showToast('Pasting is disabled during the test.'); }
     });
-    cm.on('change', () => { state.codingCode[q.id] = cm.getValue(); saveState(); });
+    cm.on('change', () => { state.codingCode[q.id] = cm.getValue(); saveState(); updateAnsweredCount(); });
     cmEditors[q.id] = cm;
   });
 }
@@ -470,7 +494,8 @@ function updateAnsweredCount() {
 
 function confirmSubmit() {
   const answered = Object.keys(state.mcqAnswers).length;
-  const msg = `You have answered ${answered}/${TEST.mcqs.length} MCQs. Once submitted, you cannot make changes. Submit now?`;
+  const codedCount = TEST.coding.filter(q => (state.codingCode[q.id] || '').trim() && state.codingCode[q.id] !== q.starterCode).length;
+  const msg = `MCQs answered: ${answered}/${TEST.mcqs.length}\nCoding questions touched: ${codedCount}/${TEST.coding.length}\n\nOnce submitted, you cannot make changes. Submit now?`;
   if (confirm(msg)) doSubmit(false);
 }
 
@@ -586,8 +611,19 @@ function finishSubmit(data) {
   document.getElementById('testArea').classList.add('hidden');
   document.getElementById('submitScreen').classList.remove('hidden');
   document.getElementById('scoreDisplay').textContent = data.totalScore + ' / ' + data.maxScore;
-  document.getElementById('scoreBreak').textContent = 'MCQ: ' + data.mcqScore + '  |  Coding: ' + data.codingScore +
+  let breakHtml = 'MCQ: ' + data.mcqScore + '  |  Coding: ' + data.codingScore +
     (data.saved ? '' : '  (Warning: result may not have saved — inform your instructor)');
+  if (data.breakdown && data.breakdown.length) {
+    breakHtml += '<div style="text-align:left;max-width:480px;margin:16px auto 0;">';
+    data.breakdown.forEach(b => {
+      const qTitle = (TEST.coding.find(q => q.id === b.id) || {}).title || b.id;
+      breakHtml += `<div style="padding:8px 0;border-bottom:1px solid var(--line);">
+        <b>${escapeHtml(qTitle)}</b> — ${b.awarded}/${b.max}<br>
+        <span style="font-size:13px;color:#666;">${escapeHtml(b.message)}</span></div>`;
+    });
+    breakHtml += '</div>';
+  }
+  document.getElementById('scoreBreak').innerHTML = breakHtml;
   if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
 }
 </script>
