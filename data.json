@@ -464,6 +464,38 @@
           ]
         }
       ]
+    },
+    "batch5": {
+      "title": "sample c++ test",
+      "language": "cpp",
+      "durationMinutes": 20,
+      "maxWarnings": 5,
+      "mcqs": [
+        {
+          "id": "q1",
+          "question": "choose this",
+          "options": [
+            "n",
+            "s",
+            "a",
+            "this"
+          ]
+        }
+      ],
+      "coding": [
+        {
+          "id": "c1",
+          "title": "sum",
+          "description": "Sum of two numbers in c++",
+          "starterCode": "#i",
+          "visibleTests": [
+            {
+              "input": "4 8",
+              "expectedOutput": "12"
+            }
+          ]
+        }
+      ]
     }
   }
 }
