@@ -415,7 +415,7 @@ function renderCoding() {
     container.appendChild(card);
 
     const cm = CodeMirror(document.getElementById('cmwrap_' + q.id), {
-      value: savedCode, mode: 'text/x-java', theme: 'dracula', lineNumbers: true,
+      value: savedCode, mode: cmModeFor(TEST.language), theme: 'dracula', lineNumbers: true,
       matchBrackets: true, autoCloseBrackets: true, indentUnit: 4, tabSize: 4,
       extraKeys: { Tab: (inst) => inst.replaceSelection('    ', 'end') }
     });
@@ -427,11 +427,17 @@ function renderCoding() {
   });
 }
 
+function cmModeFor(language) {
+  if (language === 'c') return 'text/x-csrc';
+  if (language === 'cpp') return 'text/x-c++src';
+  return 'text/x-java';
+}
+
 async function callLocalRunner(code, stdin) {
   const resp = await fetch(LOCAL_RUNNER_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ code, stdin }).toString()
+    body: new URLSearchParams({ code, stdin, language: TEST.language || 'java' }).toString()
   });
   if (!resp.ok) throw new Error('Local runner returned ' + resp.status);
   return await resp.json();
@@ -627,7 +633,7 @@ async function submitViaServerFallback() {
     method: 'POST',
     body: JSON.stringify({
       action: 'submit', testId, rollNumber: student.roll, name: student.name,
-      mcqAnswers: state.mcqAnswers, codingCode: state.codingCode,
+      mcqAnswers: state.mcqAnswers, codingCode: state.codingCode, language: TEST.language || 'java',
       integrity: { warnings: state.warnings }
     })
   });
