@@ -6,6 +6,7 @@
 <title>Java Programming Test</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/eclipse.min.css">
 <style>
   :root {
     --ink: #1c2430; --paper: #f6f5f1; --panel: #ffffff; --line: #dcd9d0;
@@ -13,6 +14,11 @@
     --mono: "Consolas", "Menlo", "Courier New", monospace;
     --sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   }
+  body.theme-dark {
+    --ink: #e9e6dd; --paper: #14181f; --panel: #1c2430; --line: #303a48;
+    --accent: #6fcf9e; --accent-soft: #1f3a30; --warn: #ff8a75; --warn-soft: #3a1f1c;
+  }
+  .theme-toggle { background: rgba(255,255,255,.12); border: none; color: inherit; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer; }
   * { box-sizing: border-box; -webkit-touch-callout: none; }
   body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); line-height: 1.5; user-select: none; }
   input, textarea, .CodeMirror { user-select: text; }
@@ -62,17 +68,27 @@
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--warn); color: #fff;
     padding: 10px 18px; border-radius: 8px; font-size: 13.5px; z-index: 500; opacity: 0; transition: opacity .2s; }
   .toast.show { opacity: 1; }
+  #printResultArea { display: none; }
+  @media print {
+    body > *:not(#printResultArea) { display: none !important; }
+    #printResultArea { display: block !important; }
+    .no-print { display: none !important; }
+  }
+  .result-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
+  .result-table th, .result-table td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; }
+  .result-table th { background: var(--accent-soft); }
 </style>
 </head>
 <body oncontextmenu="return !testStarted;">
 
 <div class="topbar">
-  <div class="title">Java Programming Test</div>
+  <div class="title" id="topbarTitle">Loading…</div>
   <div class="meta">
     <span id="whoami"></span>
     <span id="answeredCount"></span>
     <span id="warnDisplay" class="hidden"></span>
     <span id="timerDisplay" class="hidden"></span>
+    <button class="theme-toggle" onclick="toggleTheme()" id="themeToggleBtn">🌙 Dark</button>
   </div>
 </div>
 
@@ -127,9 +143,13 @@
     <div>Test submitted</div>
     <div class="score" id="scoreDisplay"></div>
     <div id="scoreBreak" style="color:#555;"></div>
+    <div id="resultTableWrap" style="text-align:left;max-width:520px;margin:16px auto 0;"></div>
+    <button class="secondary no-print" onclick="printMyResult()" style="margin-top:16px;">Print My Result</button>
   </div>
 
 </div>
+
+<div id="printResultArea"></div>
 
 <div id="fsOverlay" class="fs-overlay hidden">
   <div style="font-size:18px;font-weight:600;">You left fullscreen</div>
@@ -140,6 +160,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
 <script>
@@ -175,8 +196,11 @@ async function init() {
     }
     TEST = SITE.tests[testId];
     document.getElementById('testTitle').textContent = TEST.title || 'Enter test password';
+    document.getElementById('topbarTitle').textContent = TEST.title || 'Programming Test';
+    document.title = TEST.title || 'Programming Test';
     document.getElementById('loadingCard').classList.add('hidden');
     document.getElementById('passwordCard').classList.remove('hidden');
+    initTheme();
     checkLocalRunner();
   } catch (err) {
     document.getElementById('loadingCard').innerHTML =
@@ -184,6 +208,20 @@ async function init() {
   }
 }
 init();
+
+function initTheme() {
+  const saved = localStorage.getItem('javatest_theme') || 'light';
+  applyTheme(saved);
+}
+function applyTheme(mode) {
+  document.body.classList.toggle('theme-dark', mode === 'dark');
+  document.getElementById('themeToggleBtn').textContent = mode === 'dark' ? '☀ Light' : '🌙 Dark';
+  localStorage.setItem('javatest_theme', mode);
+  Object.values(cmEditors).forEach(cm => cm.setOption('theme', mode === 'dark' ? 'dracula' : 'eclipse'));
+}
+function toggleTheme() {
+  applyTheme(document.body.classList.contains('theme-dark') ? 'light' : 'dark');
+}
 
 let runnerPollInterval = null;
 
@@ -244,6 +282,7 @@ async function startTest() {
   const roll = document.getElementById('rollInput').value.trim();
   const name = document.getElementById('nameInput').value.trim();
   if (!roll || !name) { alert('Please enter both roll number and name.'); return; }
+  student = { roll, name };
 
   const startBtn = document.getElementById('startTestBtn');
   startBtn.disabled = true; startBtn.textContent = 'Checking…';
@@ -257,7 +296,6 @@ async function startTest() {
   }
   startBtn.disabled = false; startBtn.textContent = 'Start Test (enters fullscreen)';
 
-  student = { roll, name };
   storeKey = 'javatest_progress_' + testId + '_' + roll;
   loadState();
   if (!state.startTime) { state.startTime = Date.now(); saveState(); }
@@ -282,8 +320,9 @@ function showAlreadySubmitted(data) {
   document.getElementById('submitScreen').classList.remove('hidden');
   if (data) {
     document.getElementById('scoreDisplay').textContent = data.totalScore + ' / ' + data.maxScore;
-    document.getElementById('scoreBreak').textContent = 'MCQ: ' + data.mcqScore + '  |  Coding: ' + data.codingScore +
-      '\n\nYou have already submitted this test. If you believe this is wrong, contact your instructor.';
+    document.getElementById('scoreBreak').textContent = 'You have already submitted this test. If you believe this is wrong, contact your instructor.';
+    document.getElementById('resultTableWrap').innerHTML = buildResultTableHtml(data);
+    localStorage.setItem('javatest_submitted_' + testId + '_' + student.roll, JSON.stringify(data));
   } else {
     document.getElementById('scoreDisplay').textContent = 'Already submitted';
   }
@@ -376,60 +415,84 @@ function renderMCQs() {
 }
 function setMcqAnswer(qid, idx) { state.mcqAnswers[qid] = idx; saveState(); updateAnsweredCount(); }
 
+function flatCodingQuestions() {
+  const flat = [];
+  (TEST.codingSections || []).forEach(sec => {
+    (sec.questions || []).forEach(q => {
+      flat.push(Object.assign({}, q, { sectionId: sec.id, sectionName: sec.name, marksPerQuestion: sec.marksPerQuestion }));
+    });
+  });
+  return flat;
+}
+function languageLabel(language) {
+  return { java: 'Java', c: 'C', cpp: 'C++', python: 'Python' }[language] || language;
+}
+
 // ============ Coding ============
 function renderCoding() {
   const container = document.getElementById('codingList');
   container.innerHTML = '';
-  TEST.coding.forEach((q) => {
-    const savedCode = state.codingCode[q.id] || q.starterCode;
-    const card = document.createElement('div');
-    card.className = 'card';
-    let visHtml = '';
-    if (q.visibleTests && q.visibleTests.length) {
-      visHtml = '<div class="visible-tests"><b>Sample test cases (for your own checking)</b>';
-      q.visibleTests.forEach((t, i) => {
-        visHtml += `<div class="vt-row">Test ${i+1} — Input: ${escapeHtml(t.input)} | Expected: ${escapeHtml(t.expectedOutput)}</div>`;
-      });
-      visHtml += '</div>';
-    }
-    card.innerHTML = `
-      <h2>${escapeHtml(q.title)}</h2>
-      <pre class="desc">${escapeHtml(q.description)}</pre>
-      ${visHtml}
-      <div class="cm-wrap" id="cmwrap_${q.id}"></div>
-      <div class="run-row">
-        <button class="secondary" onclick="runVisibleTests('${q.id}')">Run &amp; Check Sample Tests</button>
-        <span id="runstatus_${q.id}" style="font-size:13px;color:#666;"></span>
-      </div>
-      <div id="result_${q.id}"></div>
-      <div class="custom-run">
-        <label>Or try your own input (just runs your code, no pass/fail check)</label>
-        <textarea id="custominput_${q.id}" placeholder="Type input here, one value per line as your program expects"></textarea>
-        <div class="run-row">
-          <button class="secondary" onclick="runCustom('${q.id}')">Run With This Input</button>
-          <span id="customstatus_${q.id}" style="font-size:13px;color:#666;"></span>
-        </div>
-        <div id="customresult_${q.id}"></div>
-      </div>
-    `;
-    container.appendChild(card);
+  (TEST.codingSections || []).forEach((sec) => {
+    const sectionHeader = document.createElement('div');
+    sectionHeader.className = 'card';
+    sectionHeader.innerHTML = `<h2 style="margin:0;">${escapeHtml(sec.name)} — ${sec.marksPerQuestion} marks per question</h2>`;
+    container.appendChild(sectionHeader);
 
-    const cm = CodeMirror(document.getElementById('cmwrap_' + q.id), {
-      value: savedCode, mode: cmModeFor(TEST.language), theme: 'dracula', lineNumbers: true,
-      matchBrackets: true, autoCloseBrackets: true, indentUnit: 4, tabSize: 4,
-      extraKeys: { Tab: (inst) => inst.replaceSelection('    ', 'end') }
+    (sec.questions || []).forEach((q) => {
+      const savedCode = state.codingCode[q.id] || q.starterCode;
+      const card = document.createElement('div');
+      card.className = 'card';
+      let visHtml = '';
+      if (q.visibleTests && q.visibleTests.length) {
+        visHtml = '<div class="visible-tests"><b>Sample test cases (for your own checking)</b>';
+        q.visibleTests.forEach((t, i) => {
+          visHtml += `<div class="vt-row">Test ${i+1} — Input: ${escapeHtml(t.input)} | Expected: ${escapeHtml(t.expectedOutput)}</div>`;
+        });
+        visHtml += '</div>';
+      }
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <h2 style="margin:0;">${escapeHtml(q.title)}</h2>
+          <span class="qid-badge" style="background:var(--accent-soft);color:var(--accent);padding:3px 10px;border-radius:5px;font-size:12px;font-weight:600;">${languageLabel(TEST.language)}</span>
+        </div>
+        <pre class="desc">${escapeHtml(q.description)}</pre>
+        ${visHtml}
+        <div class="cm-wrap" id="cmwrap_${q.id}"></div>
+        <div class="run-row">
+          <button class="secondary" onclick="runVisibleTests('${q.id}')">Run &amp; Check Sample Tests</button>
+          <span id="runstatus_${q.id}" style="font-size:13px;color:#666;"></span>
+        </div>
+        <div id="result_${q.id}"></div>
+        <div class="custom-run">
+          <label>Or try your own input (just runs your code, no pass/fail check)</label>
+          <textarea id="custominput_${q.id}" placeholder="Type input here, one value per line as your program expects"></textarea>
+          <div class="run-row">
+            <button class="secondary" onclick="runCustom('${q.id}')">Run With This Input</button>
+            <span id="customstatus_${q.id}" style="font-size:13px;color:#666;"></span>
+          </div>
+          <div id="customresult_${q.id}"></div>
+        </div>
+      `;
+      container.appendChild(card);
+
+      const cm = CodeMirror(document.getElementById('cmwrap_' + q.id), {
+        value: savedCode, mode: cmModeFor(TEST.language), theme: document.body.classList.contains('theme-dark') ? 'dracula' : 'eclipse', lineNumbers: true,
+        matchBrackets: true, autoCloseBrackets: true, indentUnit: 4, tabSize: 4,
+        extraKeys: { Tab: (inst) => inst.replaceSelection('    ', 'end') }
+      });
+      cm.on('beforeChange', (instance, change) => {
+        if (change.origin === 'paste') { change.cancel(); showToast('Pasting is disabled during the test.'); }
+      });
+      cm.on('change', () => { state.codingCode[q.id] = cm.getValue(); saveState(); updateAnsweredCount(); });
+      cmEditors[q.id] = cm;
     });
-    cm.on('beforeChange', (instance, change) => {
-      if (change.origin === 'paste') { change.cancel(); showToast('Pasting is disabled during the test.'); }
-    });
-    cm.on('change', () => { state.codingCode[q.id] = cm.getValue(); saveState(); updateAnsweredCount(); });
-    cmEditors[q.id] = cm;
   });
 }
 
 function cmModeFor(language) {
   if (language === 'c') return 'text/x-csrc';
   if (language === 'cpp') return 'text/x-c++src';
+  if (language === 'python') return 'text/x-python';
   return 'text/x-java';
 }
 
@@ -452,9 +515,21 @@ async function ensureGradingData() {
   gradingDataCache = data;
   return data;
 }
+// Flattens the server's { sectionId: { marksPerQuestion, questions: {qid: tests} } }
+// into { qid: { tests, marksPerQuestion, sectionId } } for easy lookup.
+function flattenGradingSections(codingSections) {
+  const flat = {};
+  Object.keys(codingSections || {}).forEach(sid => {
+    const sec = codingSections[sid];
+    Object.keys(sec.questions || {}).forEach(qid => {
+      flat[qid] = { tests: sec.questions[qid], marksPerQuestion: sec.marksPerQuestion, sectionId: sid };
+    });
+  });
+  return flat;
+}
 
 async function runVisibleTests(qid) {
-  const q = TEST.coding.find(c => c.id === qid);
+  const q = flatCodingQuestions().find(c => c.id === qid);
   const code = cmEditors[qid].getValue();
   const statusEl = document.getElementById('runstatus_' + qid);
   const resultEl = document.getElementById('result_' + qid);
@@ -487,7 +562,8 @@ async function runVisibleTests(qid) {
   // pass count is shown — never the actual hidden input/output.
   try {
     const gd = await ensureGradingData();
-    const allTests = gd.codingTests[qid] || [];
+    const flat = flattenGradingSections(gd.codingSections);
+    const allTests = (flat[qid] || {}).tests || [];
     let passCount = 0;
     for (const t of allTests) {
       const run = await callLocalRunner(code, t.input);
@@ -526,14 +602,14 @@ async function runCustom(qid) {
 
 function updateAnsweredCount() {
   const answered = Object.keys(state.mcqAnswers).length;
-  const codedCount = TEST.coding.filter(q => (state.codingCode[q.id] || '').trim() && state.codingCode[q.id] !== q.starterCode).length;
-  document.getElementById('answeredCount').textContent = `MCQ: ${answered}/${TEST.mcqs.length}  |  Coding touched: ${codedCount}/${TEST.coding.length}`;
+  const codedCount = flatCodingQuestions().filter(q => (state.codingCode[q.id] || '').trim() && state.codingCode[q.id] !== q.starterCode).length;
+  document.getElementById('answeredCount').textContent = `MCQ: ${answered}/${TEST.mcqs.length}  |  Coding touched: ${codedCount}/${flatCodingQuestions().length}`;
 }
 
 function confirmSubmit() {
   const answered = Object.keys(state.mcqAnswers).length;
-  const codedCount = TEST.coding.filter(q => (state.codingCode[q.id] || '').trim() && state.codingCode[q.id] !== q.starterCode).length;
-  const msg = `MCQs answered: ${answered}/${TEST.mcqs.length}\nCoding questions touched: ${codedCount}/${TEST.coding.length}\n\nOnce submitted, you cannot make changes. Submit now?`;
+  const codedCount = flatCodingQuestions().filter(q => (state.codingCode[q.id] || '').trim() && state.codingCode[q.id] !== q.starterCode).length;
+  const msg = `MCQs answered: ${answered}/${TEST.mcqs.length}\nCoding questions touched: ${codedCount}/${flatCodingQuestions().length}\n\nOnce submitted, you cannot make changes. Submit now?`;
   if (confirm(msg)) doSubmit(false);
 }
 
@@ -545,7 +621,7 @@ async function doSubmit(auto) {
   clearInterval(timerInterval);
   document.getElementById('fsOverlay').classList.add('hidden');
 
-  TEST.coding.forEach(q => { if (cmEditors[q.id]) state.codingCode[q.id] = cmEditors[q.id].getValue(); });
+  flatCodingQuestions().forEach(q => { if (cmEditors[q.id]) state.codingCode[q.id] = cmEditors[q.id].getValue(); });
   saveState();
 
   let usedLocalGrading = false;
@@ -572,8 +648,9 @@ async function doSubmit(auto) {
 // deliberate speed/trust trade-off chosen for this test.
 async function gradeLocallyAndSubmit() {
   const gd = await ensureGradingData();
+  const flat = flattenGradingSections(gd.codingSections);
 
-  const marks = gd.marksConfig || { mcqEach: 1, codingEach: 5 };
+  const marks = gd.marksConfig || { mcqEach: 1 };
 
   let mcqScore = 0;
   const mcqDetail = {};
@@ -588,10 +665,10 @@ async function gradeLocallyAndSubmit() {
   let codingScore = 0;
   const codingDetail = {};
   const btn = document.getElementById('finalSubmitBtn');
-  for (const cid in gd.codingTests) {
-    if (btn) btn.textContent = 'Grading ' + cid + ' locally…';
-    const code = state.codingCode[cid] || '';
-    const tests = gd.codingTests[cid];
+  for (const qid in flat) {
+    const { tests, marksPerQuestion } = flat[qid];
+    if (btn) btn.textContent = 'Grading ' + qid + ' locally…';
+    const code = state.codingCode[qid] || '';
     let results;
     try {
       results = [];
@@ -606,12 +683,15 @@ async function gradeLocallyAndSubmit() {
       return false; // local runner dropped mid-grading — bail to server fallback
     }
     const allPass = results.length > 0 && results.every(r => r.pass);
-    if (allPass) codingScore += marks.codingEach;
-    codingDetail[cid] = { code, results, awarded: allPass ? marks.codingEach : 0 };
+    const awarded = allPass ? marksPerQuestion : 0;
+    codingScore += awarded;
+    codingDetail[qid] = { code, results, awarded };
   }
 
+  const mcqMax = Object.keys(gd.mcqAnswers).length * marks.mcqEach;
+  const codingMax = Object.values(flat).reduce((s, f) => s + f.marksPerQuestion, 0);
   const totalScore = mcqScore + codingScore;
-  const maxScore = (Object.keys(gd.mcqAnswers).length * marks.mcqEach) + (Object.keys(gd.codingTests).length * marks.codingEach);
+  const maxScore = mcqMax + codingMax;
 
   const resp = await fetch(SITE.apiUrl, {
     method: 'POST',
@@ -647,20 +727,45 @@ function finishSubmit(data) {
   document.getElementById('testArea').classList.add('hidden');
   document.getElementById('submitScreen').classList.remove('hidden');
   document.getElementById('scoreDisplay').textContent = data.totalScore + ' / ' + data.maxScore;
-  let breakHtml = 'MCQ: ' + data.mcqScore + '  |  Coding: ' + data.codingScore +
-    (data.saved ? '' : '  (Warning: result may not have saved — inform your instructor)');
-  if (data.breakdown && data.breakdown.length) {
-    breakHtml += '<div style="text-align:left;max-width:480px;margin:16px auto 0;">';
-    data.breakdown.forEach(b => {
-      const qTitle = (TEST.coding.find(q => q.id === b.id) || {}).title || b.id;
-      breakHtml += `<div style="padding:8px 0;border-bottom:1px solid var(--line);">
-        <b>${escapeHtml(qTitle)}</b> — ${b.awarded}/${b.max}<br>
-        <span style="font-size:13px;color:#666;">${escapeHtml(b.message)}</span></div>`;
-    });
-    breakHtml += '</div>';
-  }
-  document.getElementById('scoreBreak').innerHTML = breakHtml;
+  document.getElementById('scoreBreak').textContent =
+    (data.saved ? 'Submitted successfully.' : 'Warning: result may not have saved — inform your instructor.');
+  document.getElementById('resultTableWrap').innerHTML = buildResultTableHtml(data);
   if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+}
+
+// Builds the score-summary table (no correct answers shown) — section by
+// section, plus MCQ and grand total. Shared by the on-screen view and print.
+function buildResultTableHtml(data) {
+  const now = new Date();
+  const codingMax = data.sectionTotals ? Object.values(data.sectionTotals).reduce((s, x) => s + x.max, 0) : (data.maxScore - data.mcqScore);
+  const mcqMax = data.maxScore - codingMax;
+  let html = `<table class="result-table">
+    <tr><th>Test</th><td>${escapeHtml(TEST.title || testId)}</td></tr>
+    <tr><th>Name</th><td>${escapeHtml(student.name)}</td></tr>
+    <tr><th>Roll Number</th><td>${escapeHtml(student.roll)}</td></tr>
+    <tr><th>Date</th><td>${now.toLocaleDateString()} ${now.toLocaleTimeString()}</td></tr>
+  </table>
+  <table class="result-table" style="margin-top:14px;">
+    <tr><th>Section</th><th>Marks Obtained</th><th>Out Of</th></tr>
+    <tr><td>Multiple Choice</td><td>${data.mcqScore}</td><td>${mcqMax}</td></tr>`;
+  if (data.sectionTotals) {
+    Object.values(data.sectionTotals).forEach(sec => {
+      html += `<tr><td>${escapeHtml(sec.name)}</td><td>${sec.obtained}</td><td>${sec.max}</td></tr>`;
+    });
+  } else {
+    html += `<tr><td>Coding</td><td>${data.codingScore}</td><td>${codingMax}</td></tr>`;
+  }
+  html += `<tr style="font-weight:700;"><td>Total</td><td>${data.totalScore}</td><td>${data.maxScore}</td></tr></table>`;
+  return html;
+}
+
+function printMyResult() {
+  const raw = localStorage.getItem('javatest_submitted_' + testId + '_' + student.roll);
+  const data = raw ? JSON.parse(raw) : null;
+  if (!data) return;
+  document.getElementById('printResultArea').innerHTML =
+    `<h1>${escapeHtml(TEST.title || testId)} — Result</h1>` + buildResultTableHtml(data);
+  window.print();
 }
 </script>
 </body>
