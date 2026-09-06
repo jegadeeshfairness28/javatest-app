@@ -168,6 +168,64 @@
           ]
         }
       ]
+    },
+    "batch2": {
+      "title": "test for python",
+      "language": "python",
+      "durationMinutes": 30,
+      "maxWarnings": 6,
+      "mcqs": [
+        {
+          "id": "q1",
+          "question": "choose here",
+          "options": [
+            "here",
+            "a",
+            "ssff",
+            "ff"
+          ]
+        }
+      ],
+      "codingSections": [
+        {
+          "id": "s1",
+          "name": "basic question",
+          "marksPerQuestion": 5,
+          "questions": [
+            {
+              "id": "c1",
+              "title": "add 2 numbers",
+              "description": "add 2 of given nums",
+              "starterCode": "int",
+              "visibleTests": [
+                {
+                  "input": "3 4",
+                  "expectedOutput": "7"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s2",
+          "name": "long answer programs",
+          "marksPerQuestion": 5,
+          "questions": [
+            {
+              "id": "c2",
+              "title": "print the name ",
+              "description": "input printing",
+              "starterCode": "int x=",
+              "visibleTests": [
+                {
+                  "input": "jega",
+                  "expectedOutput": "jega"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   }
 }
