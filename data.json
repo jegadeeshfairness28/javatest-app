@@ -1,5 +1,5 @@
 {
-  "apiUrl": "PASTE_YOUR_RENDER_URL_HERE",
+  "apiUrl": "https://javatest-backend.onrender.com",
   "tests": {
     "batch1": {
       "title": "Java Programming Test — Batch 1",
