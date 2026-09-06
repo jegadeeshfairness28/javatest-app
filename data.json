@@ -7,11 +7,66 @@
       "durationMinutes": 60,
       "maxWarnings": 3,
       "mcqs": [
-        { "id": "q1", "question": "Which of these is not a Java primitive type?", "options": ["int", "float", "String", "char"] },
-        { "id": "q2", "question": "What is the default value of a boolean instance variable?", "options": ["true", "false", "0", "null"] },
-        { "id": "q3", "question": "Which keyword is used to inherit a class in Java?", "options": ["extends", "implements", "inherits", "super"] },
-        { "id": "q4", "question": "Which operator is used to compare two values for equality?", "options": ["=", "==", "===", "eq"] },
-        { "id": "q5", "question": "Which collection class does not allow duplicate elements?", "options": ["ArrayList", "LinkedList", "Vector", "HashSet"] }
+        {
+          "id": "q1",
+          "question": "Which of these is not a Java primitive type?",
+          "options": [
+            "int",
+            "float",
+            "String",
+            "char"
+          ]
+        },
+        {
+          "id": "q2",
+          "question": "What is the default value of a boolean instance variable?",
+          "options": [
+            "true",
+            "false",
+            "0",
+            "null"
+          ]
+        },
+        {
+          "id": "q3",
+          "question": "Which keyword is used to inherit a class in Java?",
+          "options": [
+            "extends",
+            "implements",
+            "inherits",
+            "super"
+          ]
+        },
+        {
+          "id": "q4",
+          "question": "Which operator is used to compare two values for equality?",
+          "options": [
+            "=",
+            "==",
+            "===",
+            "eq"
+          ]
+        },
+        {
+          "id": "q5",
+          "question": "Which collection class does not allow duplicate elements?",
+          "options": [
+            "ArrayList",
+            "LinkedList",
+            "Vector",
+            "HashSet"
+          ]
+        },
+        {
+          "id": "q6",
+          "question": "choose here",
+          "options": [
+            "here",
+            "q",
+            "aa",
+            "dd"
+          ]
+        }
       ],
       "codingSections": [
         {
@@ -19,10 +74,54 @@
           "name": "Section 1",
           "marksPerQuestion": 2,
           "questions": [
-            { "id": "c1", "title": "1. Sum of First N Natural Numbers", "description": "Read an integer N and print the sum of the first N natural numbers.", "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // TODO\n    }\n}", "visibleTests": [ { "input": "5", "expectedOutput": "15" } ] },
-            { "id": "c2", "title": "2. Prime Number Check", "description": "Read an integer N and print \"Prime\" or \"Not Prime\".", "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // TODO\n    }\n}", "visibleTests": [ { "input": "7", "expectedOutput": "Prime" } ] },
-            { "id": "c3", "title": "3. Reverse a String", "description": "Read a word and print it reversed.", "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        // TODO\n    }\n}", "visibleTests": [ { "input": "hello", "expectedOutput": "olleh" } ] },
-            { "id": "c4", "title": "4. Factorial Using Recursion", "description": "Read an integer N and print its factorial using recursion.", "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    static long factorial(int n) { return 0; }\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        System.out.println(factorial(n));\n    }\n}", "visibleTests": [ { "input": "5", "expectedOutput": "120" } ] }
+            {
+              "id": "c1",
+              "title": "1. Sum of First N Natural Numbers",
+              "description": "Read an integer N and print the sum of the first N natural numbers.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "5\n",
+                  "expectedOutput": "15"
+                }
+              ]
+            },
+            {
+              "id": "c2",
+              "title": "2. Prime Number Check",
+              "description": "Read an integer N and print \"Prime\" or \"Not Prime\".",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "7\n",
+                  "expectedOutput": "Prime"
+                }
+              ]
+            },
+            {
+              "id": "c3",
+              "title": "3. Reverse a String",
+              "description": "Read a word and print it reversed.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "hello\n",
+                  "expectedOutput": "olleh"
+                }
+              ]
+            },
+            {
+              "id": "c4",
+              "title": "4. Factorial Using Recursion",
+              "description": "Read an integer N and print its factorial using recursion.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    static long factorial(int n) { return 0; }\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        System.out.println(factorial(n));\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "5\n",
+                  "expectedOutput": "120"
+                }
+              ]
+            }
           ]
         },
         {
@@ -30,8 +129,42 @@
           "name": "Section 2",
           "marksPerQuestion": 6,
           "questions": [
-            { "id": "c5", "title": "5. Sort an Array", "description": "Read N, then N integers. Print them sorted ascending, space-separated.", "starterCode": "import java.util.Scanner;\nimport java.util.Arrays;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] arr = new int[n];\n        for (int i = 0; i < n; i++) arr[i] = sc.nextInt();\n        // TODO\n    }\n}", "visibleTests": [ { "input": "5\n9 3 7 1 5", "expectedOutput": "1 3 5 7 9" } ] },
-            { "id": "c6", "title": "6. Average and Grade (OOP)", "description": "Read 3 marks. Print Average and Grade.", "starterCode": "import java.util.Scanner;\n\nclass Student {\n    int m1, m2, m3;\n    Student(int m1, int m2, int m3) { this.m1=m1; this.m2=m2; this.m3=m3; }\n    double average() { return (m1+m2+m3)/3.0; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        Student s = new Student(sc.nextInt(), sc.nextInt(), sc.nextInt());\n        // TODO\n    }\n}", "visibleTests": [ { "input": "90 85 95", "expectedOutput": "Average: 90.0\nGrade: A" } ] }
+            {
+              "id": "c5",
+              "title": "5. Sort an Array",
+              "description": "Read N, then N integers. Print them sorted ascending, space-separated.",
+              "starterCode": "import java.util.Scanner;\nimport java.util.Arrays;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] arr = new int[n];\n        for (int i = 0; i < n; i++) arr[i] = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "5\n9 3 7 1 5\n",
+                  "expectedOutput": "1 3 5 7 9"
+                }
+              ]
+            },
+            {
+              "id": "c6",
+              "title": "6. Average and Grade (OOP)",
+              "description": "Read 3 marks. Print Average and Grade.",
+              "starterCode": "import java.util.Scanner;\n\nclass Student {\n    int m1, m2, m3;\n    Student(int m1, int m2, int m3) { this.m1=m1; this.m2=m2; this.m3=m3; }\n    double average() { return (m1+m2+m3)/3.0; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        Student s = new Student(sc.nextInt(), sc.nextInt(), sc.nextInt());\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "90 85 95\n",
+                  "expectedOutput": "Average: 90.0\nGrade: A"
+                }
+              ]
+            },
+            {
+              "id": "c7",
+              "title": "sum of 2 numbers",
+              "description": "write sum",
+              "starterCode": "class",
+              "visibleTests": [
+                {
+                  "input": "2 4",
+                  "expectedOutput": "6"
+                }
+              ]
+            }
           ]
         }
       ]
