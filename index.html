@@ -101,9 +101,18 @@
 
   <div class="card hidden" id="passwordCard">
     <h2 id="testTitle">Enter test password</h2>
+    <div style="background:var(--warn-soft); border:1px solid var(--warn); border-radius:8px; padding:12px 14px; margin-bottom:14px; font-size:13.5px;">
+      <b>Before you continue:</b> open this test link in an <b>Incognito / Private browsing window</b>
+      (Ctrl+Shift+N in Chrome/Edge). This disables browser AI side panels (like "Ask Gemini" or Copilot)
+      that could otherwise sit next to the test and show you answers. Testing in a normal window is not allowed.
+    </div>
+    <label style="display:flex;align-items:flex-start;gap:8px;font-weight:400;margin-bottom:14px;">
+      <input type="checkbox" id="incognitoConfirm" style="margin-top:3px;" onchange="document.getElementById('pwContinueBtn').disabled = !this.checked;">
+      <span>I confirm I am taking this test in an Incognito/Private browser window.</span>
+    </label>
     <label for="pwInput">Password (given by your instructor)</label>
     <input type="password" id="pwInput" autocomplete="off">
-    <button onclick="checkPassword()">Continue</button>
+    <button onclick="checkPassword()" id="pwContinueBtn" disabled>Continue</button>
     <div id="pwError" style="color:var(--warn);font-size:13px;margin-top:8px;"></div>
   </div>
 
@@ -367,7 +376,17 @@ function showAlreadySubmitted(data) {
 function requestFullscreen() {
   const el = document.documentElement;
   const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-  if (req) req.call(el).catch(() => {});
+  if (req) {
+    req.call(el).then(() => {
+      // Chromium-only, best-effort: reserves these keys for the page instead
+      // of letting the OS/browser act on them (e.g. Windows key, Alt+Tab).
+      // Not supported in Firefox/Safari — fails silently there.
+      if (navigator.keyboard && navigator.keyboard.lock) {
+        navigator.keyboard.lock(['Escape', 'MetaLeft', 'MetaRight', 'AltLeft', 'AltRight', 'Tab', 'ControlLeft', 'ControlRight'])
+          .catch(() => {});
+      }
+    }).catch(() => {});
+  }
 }
 function reEnterFullscreen() {
   document.getElementById('fsOverlay').classList.add('hidden');
@@ -783,6 +802,7 @@ function finishSubmit(data) {
   document.getElementById('scoreBreak').textContent =
     (data.saved ? 'Submitted successfully.' : 'Warning: result may not have saved — inform your instructor.');
   document.getElementById('resultTableWrap').innerHTML = buildResultTableHtml(data);
+  if (navigator.keyboard && navigator.keyboard.unlock) { try { navigator.keyboard.unlock(); } catch (e) {} }
   if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
 }
 
