@@ -114,11 +114,13 @@
     <label for="nameInput">Full Name</label>
     <input type="text" id="nameInput" autocomplete="off">
     <div id="runnerCheck" class="runner-status">Checking for local Java runner…</div>
+    <div id="languageCheck" class="runner-status hidden"></div>
     <button class="secondary" onclick="checkLocalRunner()" id="recheckBtn" style="margin-bottom:10px;">Check Again</button>
     <button onclick="startTest()" id="startTestBtn" disabled>Start Test (enters fullscreen)</button>
     <p id="runnerBlockNote" style="font-size:12.5px;color:var(--warn);margin-top:6px;">
-      Start Test is disabled until your local Java runner is detected. Make sure you ran
-      <code>java LocalRunner</code> and it shows "listening on http://localhost:8089/", then click "Check Again".
+      Start Test is disabled until your local runner and the required language tool are detected.
+      Make sure you ran <code>java LocalRunner</code> and it shows "listening on http://localhost:8089/",
+      and that the compiler/interpreter for this test is installed, then click "Check Again".
     </p>
     <p style="font-size:13px;color:#666;margin-top:10px;">
       The timer starts the moment you click Start and cannot be paused. Copy/paste and right-click
@@ -224,6 +226,7 @@ function toggleTheme() {
 }
 
 let runnerPollInterval = null;
+let languageAvailable = false;
 
 async function checkLocalRunner() {
   const el = document.getElementById('runnerCheck');
@@ -233,22 +236,54 @@ async function checkLocalRunner() {
     const resp = await fetch('http://localhost:8089/', { method: 'GET' });
     if (resp.ok) {
       localRunnerAvailable = true;
-      el.textContent = '✓ Local Java runner detected — you can start.';
+      el.textContent = '✓ Local runner detected.';
       el.className = 'runner-status runner-ok';
-      startBtn.disabled = false;
-      note.classList.add('hidden');
       if (runnerPollInterval) { clearInterval(runnerPollInterval); runnerPollInterval = null; }
+      await checkLanguageSupport();
+      updateStartButtonState();
       return;
     }
     throw new Error('bad response');
   } catch (e) {
     localRunnerAvailable = false;
-    el.textContent = '⚠ Local Java runner not detected.';
+    el.textContent = '⚠ Local runner not detected.';
     el.className = 'runner-status runner-bad';
-    startBtn.disabled = true;
-    note.classList.remove('hidden');
+    document.getElementById('languageCheck').classList.add('hidden');
+    updateStartButtonState();
     if (!runnerPollInterval) runnerPollInterval = setInterval(checkLocalRunner, 4000);
   }
+}
+
+async function checkLanguageSupport() {
+  const langEl = document.getElementById('languageCheck');
+  langEl.classList.remove('hidden');
+  langEl.textContent = 'Checking for ' + languageLabel(TEST.language) + '…';
+  langEl.className = 'runner-status';
+  try {
+    const resp = await fetch('http://localhost:8089/checkLanguage?language=' + encodeURIComponent(TEST.language || 'java'));
+    const data = await resp.json();
+    if (data.available) {
+      languageAvailable = true;
+      langEl.textContent = '✓ ' + languageLabel(TEST.language) + ' detected (' + data.version + ').';
+      langEl.className = 'runner-status runner-ok';
+    } else {
+      languageAvailable = false;
+      langEl.textContent = '⚠ ' + (data.error || (languageLabel(TEST.language) + ' not found.'));
+      langEl.className = 'runner-status runner-bad';
+    }
+  } catch (e) {
+    languageAvailable = false;
+    langEl.textContent = '⚠ Could not check language support — try "Check Again".';
+    langEl.className = 'runner-status runner-bad';
+  }
+}
+
+function updateStartButtonState() {
+  const startBtn = document.getElementById('startTestBtn');
+  const note = document.getElementById('runnerBlockNote');
+  const ready = localRunnerAvailable && languageAvailable;
+  startBtn.disabled = !ready;
+  note.classList.toggle('hidden', ready);
 }
 
 async function checkPassword() {
@@ -338,8 +373,14 @@ function reEnterFullscreen() {
   document.getElementById('fsOverlay').classList.add('hidden');
   requestFullscreen();
 }
+let lastWarningAt = 0;
 function addWarning(reason) {
   if (submitted) return;
+  const now = Date.now();
+  // Losing fullscreen and losing window focus often fire together for the
+  // same action (e.g. pressing the Windows key) — don't count that twice.
+  if (now - lastWarningAt < 1500) return;
+  lastWarningAt = now;
   state.warnings++;
   saveState();
   updateWarnDisplay();
@@ -368,6 +409,18 @@ function setupIntegrityWatchers() {
   document.addEventListener('visibilitychange', () => {
     if (submitted) return;
     if (document.hidden) addWarning('tab-switch');
+  });
+  // Catches cases fullscreenchange/visibilitychange can miss — e.g. the
+  // Windows key opening the taskbar, or clicking into a browser's own
+  // side panel — anything that takes OS-level focus off this window.
+  window.addEventListener('blur', () => {
+    if (submitted || !testStarted) return;
+    addWarning('window-blur');
+    if (!submitted && !document.fullscreenElement) {
+      document.getElementById('fsWarnText').textContent =
+        'Warning ' + state.warnings + ' of ' + (TEST.maxWarnings || 3) + '. Reaching the limit auto-submits your test.';
+      document.getElementById('fsOverlay').classList.remove('hidden');
+    }
   });
   document.addEventListener('copy', (e) => { if (testStarted) { e.preventDefault(); showToast('Copying is disabled during the test.'); } });
   document.addEventListener('paste', (e) => { if (testStarted) { e.preventDefault(); showToast('Pasting is disabled during the test.'); } });
