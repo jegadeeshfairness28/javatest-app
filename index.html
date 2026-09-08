@@ -48,7 +48,9 @@
   .visible-tests { font-family: var(--mono); font-size: 12.5px; background: #efeee8; border: 1px dashed var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
   .visible-tests .vt-row { padding: 4px 0; white-space: pre-wrap; }
   .visible-tests b { font-family: var(--sans); }
-  .runner-status { font-size: 12.5px; padding: 6px 10px; border-radius: 6px; margin-bottom: 10px; display: inline-block; }
+  .runner-status { font-size: 12.5px; padding: 6px 10px; border-radius: 6px; margin-bottom: 10px; display: inline-flex; align-items: center; gap: 8px; }
+  .spinner { width: 12px; height: 12px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .runner-ok { background: var(--accent-soft); color: var(--accent); }
   .runner-bad { background: var(--warn-soft); color: var(--warn); }
   .cm-wrap { border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
@@ -101,13 +103,10 @@
 
   <div class="card hidden" id="passwordCard">
     <h2 id="testTitle">Enter test password</h2>
-    <div style="background:var(--warn-soft); border:1px solid var(--warn); border-radius:8px; padding:12px 14px; margin-bottom:14px; font-size:13.5px;">
-      <b>Before you continue:</b> open this test link in an <b>Incognito / Private browsing window</b>
-      (Ctrl+Shift+N in Chrome/Edge). Testing in a normal window is not allowed.
-    </div>
-    <label style="display:flex;align-items:flex-start;gap:8px;font-weight:400;margin-bottom:14px;">
-      <input type="checkbox" id="incognitoConfirm" style="margin-top:3px;" onchange="document.getElementById('pwContinueBtn').disabled = !this.checked;">
-      <span>I confirm I am taking this test in an Incognito/Private browser window.</span>
+    <div id="sebStatus" class="runner-status">Checking browser environment…</div>
+    <label id="sebFallbackRow" class="hidden" style="display:flex;align-items:flex-start;gap:8px;font-weight:400;margin:10px 0 14px;">
+      <input type="checkbox" id="sebFallbackConfirm" onchange="updateContinueButton();">
+      <span>I am unable to install Safe Exam Browser on this device. I understand this is only for rare cases, and I will use an Incognito/Private browser window instead.</span>
     </label>
     <label for="pwInput">Password (given by your instructor)</label>
     <input type="password" id="pwInput" autocomplete="off">
@@ -121,7 +120,7 @@
     <input type="text" id="rollInput" autocomplete="off">
     <label for="nameInput">Full Name</label>
     <input type="text" id="nameInput" autocomplete="off">
-    <div id="runnerCheck" class="runner-status">Checking for local Java runner…</div>
+    <div id="runnerCheck" class="runner-status"><span class="spinner"></span>Checking for local runner… please wait, this can take a few seconds.</div>
     <div id="languageCheck" class="runner-status hidden"></div>
     <button class="secondary" onclick="checkLocalRunner()" id="recheckBtn" style="margin-bottom:10px;">Check Again</button>
     <button onclick="startTest()" id="startTestBtn" disabled>Start Test (enters fullscreen)</button>
@@ -211,6 +210,7 @@ async function init() {
     document.getElementById('loadingCard').classList.add('hidden');
     document.getElementById('passwordCard').classList.remove('hidden');
     initTheme();
+    checkSebStatus();
     checkLocalRunner();
   } catch (err) {
     document.getElementById('loadingCard').innerHTML =
@@ -240,6 +240,8 @@ async function checkLocalRunner() {
   const el = document.getElementById('runnerCheck');
   const startBtn = document.getElementById('startTestBtn');
   const note = document.getElementById('runnerBlockNote');
+  el.innerHTML = '<span class="spinner"></span>Checking for local runner… please wait, this can take a few seconds.';
+  el.className = 'runner-status';
   try {
     const resp = await fetch('http://localhost:8089/', { method: 'GET' });
     if (resp.ok) {
@@ -265,7 +267,7 @@ async function checkLocalRunner() {
 async function checkLanguageSupport() {
   const langEl = document.getElementById('languageCheck');
   langEl.classList.remove('hidden');
-  langEl.textContent = 'Checking for ' + languageLabel(TEST.language) + '…';
+  langEl.innerHTML = '<span class="spinner"></span>Checking for ' + languageLabel(TEST.language) + '… please wait, this can take a few seconds.';
   langEl.className = 'runner-status';
   try {
     const resp = await fetch('http://localhost:8089/checkLanguage?language=' + encodeURIComponent(TEST.language || 'java'));
@@ -294,10 +296,38 @@ function updateStartButtonState() {
   note.classList.toggle('hidden', ready);
 }
 
+function isRunningInSEB() {
+  return /SEB[\/\s]/i.test(navigator.userAgent) || /SafeExamBrowser/i.test(navigator.userAgent);
+}
+
+function checkSebStatus() {
+  const statusEl = document.getElementById('sebStatus');
+  const fallbackRow = document.getElementById('sebFallbackRow');
+  if (isRunningInSEB()) {
+    statusEl.innerHTML = '✓ Safe Exam Browser detected.';
+    statusEl.className = 'runner-status runner-ok';
+    fallbackRow.classList.add('hidden');
+  } else {
+    statusEl.innerHTML = '⚠ Safe Exam Browser not detected. This test should be taken using Safe Exam Browser.';
+    statusEl.className = 'runner-status runner-bad';
+    fallbackRow.classList.remove('hidden');
+  }
+  updateContinueButton();
+}
+
+function updateContinueButton() {
+  const btn = document.getElementById('pwContinueBtn');
+  const ready = isRunningInSEB() || document.getElementById('sebFallbackConfirm').checked;
+  btn.disabled = !ready;
+}
+
 async function checkPassword() {
   const pw = document.getElementById('pwInput').value;
   const errEl = document.getElementById('pwError');
+  const btn = document.getElementById('pwContinueBtn');
   errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Checking password… please wait';
   try {
     const resp = await fetch(SITE.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'verifyAccess', testId, password: pw }) });
     const data = await resp.json();
@@ -306,9 +336,13 @@ async function checkPassword() {
       document.getElementById('loginCard').classList.remove('hidden');
     } else {
       errEl.textContent = 'Incorrect password.';
+      btn.disabled = false;
+      btn.textContent = 'Continue';
     }
   } catch (err) {
     errEl.textContent = 'Could not verify password — check your internet connection.';
+    btn.disabled = false;
+    btn.textContent = 'Continue';
   }
 }
 
