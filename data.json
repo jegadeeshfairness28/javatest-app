@@ -970,7 +970,7 @@
             {
               "id": "c4",
               "title": "4. Square Pattern of Stars",
-              "description": "Read the number of rows and the number of columns, then print a rectangular pattern of stars (*) with that many rows and columns, one row per line.",
+              "description": "Read the number of rows and the number of columns, then print a rectangular pattern of stars (*) with that many rows and columns, one row per line. Important : (use \"\\n\" for move to next line) .",
               "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int rows = sc.nextInt();\n        int cols = sc.nextInt();\n        // TODO\n    }\n}",
               "visibleTests": [
                 {
@@ -1121,7 +1121,7 @@
             {
               "id": "c13",
               "title": "3. Right-Angled Triangle Pattern of Stars",
-              "description": "Read an integer N (number of rows). Print a right-angled triangle of stars where row i contains i stars, one row per line.",
+              "description": "Read an integer N (number of rows). Print a right-angled triangle of stars where row i contains i stars, one row per line. Important : use \"\\n\" for move to next line.",
               "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // TODO\n    }\n}",
               "visibleTests": [
                 {
