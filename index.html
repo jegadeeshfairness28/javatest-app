@@ -103,11 +103,12 @@
 
   <div class="card hidden" id="passwordCard">
     <h2 id="testTitle">Enter test password</h2>
-    <div id="sebStatus" class="runner-status">Checking browser environment…</div>
-    <label id="sebFallbackRow" class="hidden" style="display:flex;align-items:flex-start;gap:8px;font-weight:400;margin:10px 0 14px;">
-      <input type="checkbox" id="sebFallbackConfirm" onchange="updateContinueButton();">
-      <span>I am unable to install Safe Exam Browser on this device. I understand this is only for rare cases, and I will use an Incognito/Private browser window instead.</span>
+    <div id="privateModeStatus" class="runner-status">Checking browser mode…</div>
+    <label id="privateModeFallbackRow" class="hidden" style="display:flex;align-items:flex-start;gap:8px;font-weight:400;margin:10px 0 14px;">
+      <input type="checkbox" id="privateModeConfirm" onchange="updateContinueButton();">
+      <span>I confirm I am using an Incognito/Private window (this browser doesn't let us verify that automatically).</span>
     </label>
+    <button class="secondary" onclick="checkPrivateModeStatus()" id="pmRecheckBtn" style="margin-bottom:10px;">Check Again</button>
     <label for="pwInput">Password (given by your instructor)</label>
     <input type="password" id="pwInput" autocomplete="off">
     <button onclick="checkPassword()" id="pwContinueBtn" disabled>Continue</button>
@@ -210,7 +211,7 @@ async function init() {
     document.getElementById('loadingCard').classList.add('hidden');
     document.getElementById('passwordCard').classList.remove('hidden');
     initTheme();
-    checkSebStatus();
+    checkPrivateModeStatus();
     checkLocalRunner();
   } catch (err) {
     document.getElementById('loadingCard').innerHTML =
@@ -296,19 +297,49 @@ function updateStartButtonState() {
   note.classList.toggle('hidden', ready);
 }
 
-function isRunningInSEB() {
-  return /SEB[\/\s]/i.test(navigator.userAgent) || /SafeExamBrowser/i.test(navigator.userAgent);
+// Best-effort private/Incognito browsing detection. Browsers deliberately
+// make this hard to detect (it would defeat the point of private mode if
+// websites could reliably tell), so this uses storage-quota and
+// localStorage-write heuristics that catch most cases on Chrome/Edge/Safari
+// but are NOT cryptographically certain and can change with browser updates.
+// Returns 'private', 'normal', or 'unknown' (detection not possible here).
+let privateModeResult = 'unknown';
+
+async function detectPrivateMode() {
+  try {
+    if (navigator.storage && navigator.storage.estimate) {
+      const est = await navigator.storage.estimate();
+      const quotaMB = (est.quota || 0) / (1024 * 1024);
+      if (quotaMB > 0 && quotaMB < 300) return 'private';
+      if (quotaMB >= 300) return 'normal';
+    }
+  } catch (e) {}
+  try {
+    const testKey = '__pm_test__';
+    localStorage.setItem(testKey, '1');
+    localStorage.removeItem(testKey);
+  } catch (e) {
+    return 'private'; // some Safari versions block localStorage writes in private mode
+  }
+  return 'unknown';
 }
 
-function checkSebStatus() {
-  const statusEl = document.getElementById('sebStatus');
-  const fallbackRow = document.getElementById('sebFallbackRow');
-  if (isRunningInSEB()) {
-    statusEl.innerHTML = '✓ Safe Exam Browser detected.';
+async function checkPrivateModeStatus() {
+  const statusEl = document.getElementById('privateModeStatus');
+  const fallbackRow = document.getElementById('privateModeFallbackRow');
+  statusEl.innerHTML = '<span class="spinner"></span>Checking browser mode… please wait.';
+  statusEl.className = 'runner-status';
+  privateModeResult = await detectPrivateMode();
+  if (privateModeResult === 'private') {
+    statusEl.textContent = '✓ Private/Incognito browsing detected.';
     statusEl.className = 'runner-status runner-ok';
     fallbackRow.classList.add('hidden');
+  } else if (privateModeResult === 'normal') {
+    statusEl.textContent = '⚠ This looks like a normal (non-private) browser window. Open this link in an Incognito/Private window (Ctrl+Shift+N) and reload the page.';
+    statusEl.className = 'runner-status runner-bad';
+    fallbackRow.classList.add('hidden'); // reliable negative result — no override
   } else {
-    statusEl.innerHTML = '⚠ Safe Exam Browser not detected. This test should be taken using Safe Exam Browser.';
+    statusEl.textContent = '⚠ Could not automatically verify private browsing on this browser.';
     statusEl.className = 'runner-status runner-bad';
     fallbackRow.classList.remove('hidden');
   }
@@ -317,7 +348,8 @@ function checkSebStatus() {
 
 function updateContinueButton() {
   const btn = document.getElementById('pwContinueBtn');
-  const ready = isRunningInSEB() || document.getElementById('sebFallbackConfirm').checked;
+  const ready = privateModeResult === 'private' ||
+    (privateModeResult === 'unknown' && document.getElementById('privateModeConfirm').checked);
   btn.disabled = !ready;
 }
 
@@ -477,6 +509,41 @@ function setupIntegrityWatchers() {
   document.addEventListener('copy', (e) => { if (testStarted) { e.preventDefault(); showToast('Copying is disabled during the test.'); } });
   document.addEventListener('paste', (e) => { if (testStarted) { e.preventDefault(); showToast('Pasting is disabled during the test.'); } });
   document.addEventListener('cut', (e) => { if (testStarted) { e.preventDefault(); } });
+
+  // Blocks/warns on common shortcuts for DevTools, view-source, zoom.
+  // Some of these (F12) browsers won't actually let JS block, but the
+  // attempt still gets logged as a warning, and the ones that CAN be
+  // blocked (view-source, zoom) are.
+  document.addEventListener('keydown', (e) => {
+    if (!testStarted || submitted) return;
+    const key = (e.key || '').toLowerCase();
+    const isDevToolsCombo = key === 'f12' || (e.ctrlKey && e.shiftKey && ['i', 'j', 'c'].includes(key));
+    const isViewSource = e.ctrlKey && key === 'u';
+    const isZoomKey = e.ctrlKey && ['+', '-', '=', '0'].includes(key);
+    if (isDevToolsCombo || isViewSource || isZoomKey) {
+      e.preventDefault();
+      showToast('This shortcut is disabled during the test.');
+      addWarning('blocked-shortcut');
+    }
+  });
+
+  // Best-effort DevTools-open detection via the outer/inner window size gap
+  // left by a docked DevTools panel. Won't catch an undocked DevTools
+  // window, and can occasionally misfire on unusual zoom/display setups —
+  // treat as a strong signal, not proof.
+  let devtoolsWarned = false;
+  setInterval(() => {
+    if (!testStarted || submitted) return;
+    const widthGap = window.outerWidth - window.innerWidth;
+    const heightGap = window.outerHeight - window.innerHeight;
+    const likelyOpen = widthGap > 160 || heightGap > 160;
+    if (likelyOpen && !devtoolsWarned) {
+      devtoolsWarned = true;
+      addWarning('devtools-open');
+    } else if (!likelyOpen) {
+      devtoolsWarned = false;
+    }
+  }, 1500);
 }
 
 // ============ Timer ============
@@ -722,24 +789,34 @@ async function doSubmit(auto) {
   if (submitted) return;
   submitted = true;
   const btn = document.getElementById('finalSubmitBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Grading locally…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting… verifying your answers, please wait'; }
   clearInterval(timerInterval);
   document.getElementById('fsOverlay').classList.add('hidden');
 
   flatCodingQuestions().forEach(q => { if (cmEditors[q.id]) state.codingCode[q.id] = cmEditors[q.id].getValue(); });
   saveState();
 
-  let usedLocalGrading = false;
+  // Server-verified grading is the default: the server independently
+  // recompiles and re-runs every answer, so nobody can influence their own
+  // score from the browser. This only happens once per student (unlike the
+  // old repeated Run & Check calls), so it doesn't reintroduce the
+  // performance problem that local grading was originally built to fix.
   try {
-    if (localRunnerAvailable) {
-      const graded = await gradeLocallyAndSubmit();
-      if (graded) usedLocalGrading = true;
-    }
-    if (!usedLocalGrading) {
-      if (btn) btn.textContent = 'Local runner unavailable — grading on server (slower)…';
-      await submitViaServerFallback();
-    }
+    await submitViaServerFallback();
   } catch (err) {
+    if (localRunnerAvailable) {
+      try {
+        if (btn) btn.textContent = 'Server unreachable — grading locally as a backup…';
+        const graded = await gradeLocallyAndSubmit();
+        if (!graded) throw new Error('Local grading also failed.');
+        return;
+      } catch (err2) {
+        alert('Submission failed: ' + err2.message + '\nPlease try submitting again.');
+        submitted = false;
+        if (btn) { btn.disabled = false; btn.textContent = 'Submit Test'; }
+        return;
+      }
+    }
     alert('Submission failed: ' + err.message + '\nPlease try submitting again.');
     submitted = false;
     if (btn) { btn.disabled = false; btn.textContent = 'Submit Test'; }
