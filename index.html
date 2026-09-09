@@ -104,14 +104,10 @@
   <div class="card hidden" id="passwordCard">
     <h2 id="testTitle">Enter test password</h2>
     <div id="privateModeStatus" class="runner-status">Checking browser mode…</div>
-    <label id="privateModeFallbackRow" class="hidden" style="display:flex;align-items:flex-start;gap:8px;font-weight:400;margin:10px 0 14px;">
-      <input type="checkbox" id="privateModeConfirm" onchange="updateContinueButton();">
-      <span>I confirm I am using an Incognito/Private window (this browser doesn't let us verify that automatically).</span>
-    </label>
     <button class="secondary" onclick="checkPrivateModeStatus()" id="pmRecheckBtn" style="margin-bottom:10px;">Check Again</button>
     <label for="pwInput">Password (given by your instructor)</label>
     <input type="password" id="pwInput" autocomplete="off">
-    <button onclick="checkPassword()" id="pwContinueBtn" disabled>Continue</button>
+    <button onclick="checkPassword()" id="pwContinueBtn">Continue</button>
     <div id="pwError" style="color:var(--warn);font-size:13px;margin-top:8px;"></div>
   </div>
 
@@ -303,6 +299,11 @@ function updateStartButtonState() {
 // localStorage-write heuristics that catch most cases on Chrome/Edge/Safari
 // but are NOT cryptographically certain and can change with browser updates.
 // Returns 'private', 'normal', or 'unknown' (detection not possible here).
+//
+// IMPORTANT: this is informational only. It is intentionally NOT used to
+// block or gate the Continue button — the heuristic produces false
+// positives against genuine Incognito users on some browsers/versions, and
+// a detector that blocks honest students is worse than no detector at all.
 let privateModeResult = 'unknown';
 
 async function detectPrivateMode() {
@@ -326,31 +327,19 @@ async function detectPrivateMode() {
 
 async function checkPrivateModeStatus() {
   const statusEl = document.getElementById('privateModeStatus');
-  const fallbackRow = document.getElementById('privateModeFallbackRow');
   statusEl.innerHTML = '<span class="spinner"></span>Checking browser mode… please wait.';
   statusEl.className = 'runner-status';
   privateModeResult = await detectPrivateMode();
   if (privateModeResult === 'private') {
     statusEl.textContent = '✓ Private/Incognito browsing detected.';
     statusEl.className = 'runner-status runner-ok';
-    fallbackRow.classList.add('hidden');
   } else if (privateModeResult === 'normal') {
-    statusEl.textContent = '⚠ This looks like a normal (non-private) browser window. Open this link in an Incognito/Private window (Ctrl+Shift+N) and reload the page.';
+    statusEl.textContent = '⚠ This looks like a normal (non-private) window. If you meant to use Incognito/Private mode, open this link there instead — otherwise you can just continue.';
     statusEl.className = 'runner-status runner-bad';
-    fallbackRow.classList.add('hidden'); // reliable negative result — no override
   } else {
-    statusEl.textContent = '⚠ Could not automatically verify private browsing on this browser.';
-    statusEl.className = 'runner-status runner-bad';
-    fallbackRow.classList.remove('hidden');
+    statusEl.textContent = 'ℹ Could not automatically verify browsing mode on this browser — that\'s expected on some browsers, not an error. You can continue.';
+    statusEl.className = 'runner-status';
   }
-  updateContinueButton();
-}
-
-function updateContinueButton() {
-  const btn = document.getElementById('pwContinueBtn');
-  const ready = privateModeResult === 'private' ||
-    (privateModeResult === 'unknown' && document.getElementById('privateModeConfirm').checked);
-  btn.disabled = !ready;
 }
 
 async function checkPassword() {
@@ -796,11 +785,35 @@ async function doSubmit(auto) {
   flatCodingQuestions().forEach(q => { if (cmEditors[q.id]) state.codingCode[q.id] = cmEditors[q.id].getValue(); });
   saveState();
 
-  // Server-verified grading is the default: the server independently
-  // recompiles and re-runs every answer, so nobody can influence their own
-  // score from the browser. This only happens once per student (unlike the
-  // old repeated Run & Check calls), so it doesn't reintroduce the
-  // performance problem that local grading was originally built to fix.
+  const mode = TEST.gradingMode === 'secure' ? 'secure' : 'fast';
+
+  if (mode === 'fast') {
+    // Fast (local): grades on the student's own machine using their local
+    // runner, then sends the already-computed score to the server — no
+    // waiting on a server-side recompile/rerun for every submission.
+    // Trade-off: a technically-inclined student could in principle forge
+    // their own score via DevTools, so this is meant for supervised rooms.
+    try {
+      if (!localRunnerAvailable) throw new Error('Local runner not available.');
+      const graded = await gradeLocallyAndSubmit();
+      if (!graded) throw new Error('Local grading failed.');
+      return;
+    } catch (err) {
+      try {
+        if (btn) btn.textContent = 'Local grading unavailable — falling back to server…';
+        await submitViaServerFallback();
+      } catch (err2) {
+        alert('Submission failed: ' + err2.message + '\nPlease try submitting again.');
+        submitted = false;
+        if (btn) { btn.disabled = false; btn.textContent = 'Submit Test'; }
+      }
+    }
+    return;
+  }
+
+  // Secure (server-verified): the server independently recompiles and
+  // re-runs every answer, so nobody can influence their own score from the
+  // browser. Slower per submission — pick this only when you need it.
   try {
     await submitViaServerFallback();
   } catch (err) {
