@@ -6,6 +6,7 @@
       "language": "java",
       "durationMinutes": 60,
       "maxWarnings": 3,
+      "gradingMode": "fast",
       "mcqs": [
         {
           "id": "q1",
@@ -174,6 +175,7 @@
       "language": "python",
       "durationMinutes": 30,
       "maxWarnings": 6,
+      "gradingMode": "fast",
       "mcqs": [
         {
           "id": "q1",
@@ -220,6 +222,482 @@
                 {
                   "input": "jega",
                   "expectedOutput": "jega"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "batch3": {
+      "title": "sample java test",
+      "language": "java",
+      "durationMinutes": 60,
+      "maxWarnings": 3,
+      "gradingMode": "fast",
+      "mcqs": [
+        {
+          "id": "q1",
+          "question": "Which of these is not a a Java primitive type?",
+          "options": [
+            "int",
+            "float",
+            "String",
+            "char"
+          ]
+        },
+        {
+          "id": "q2",
+          "question": "What is the default value of a boolean instance variable?",
+          "options": [
+            "true",
+            "false",
+            "0",
+            "null"
+          ]
+        },
+        {
+          "id": "q3",
+          "question": "Which keyword is used to inherit a class in Java?",
+          "options": [
+            "extends",
+            "implements",
+            "inherits",
+            "super"
+          ]
+        },
+        {
+          "id": "q4",
+          "question": "Which operator is used to compare two values for equality?",
+          "options": [
+            "=",
+            "==",
+            "===",
+            "eq"
+          ]
+        },
+        {
+          "id": "q5",
+          "question": "Which collection class does not allow duplicate elements?",
+          "options": [
+            "ArrayList",
+            "LinkedList",
+            "Vector",
+            "HashSet"
+          ]
+        },
+        {
+          "id": "q6",
+          "question": "What does JVM stand for?",
+          "options": [
+            "Java Verified Machine",
+            "Java Virtual Machine",
+            "Java Variable Method",
+            "Java Visual Model"
+          ]
+        },
+        {
+          "id": "q7",
+          "question": "Which keyword prevents a class from being inherited?",
+          "options": [
+            "final",
+            "static",
+            "private",
+            "abstract"
+          ]
+        },
+        {
+          "id": "q8",
+          "question": "Which of these is used to handle exceptions in Java?",
+          "options": [
+            "try-catch",
+            "if-else",
+            "switch-case",
+            "for-loop"
+          ]
+        },
+        {
+          "id": "q9",
+          "question": "What is the size of an int in Java?",
+          "options": [
+            "8 bits",
+            "16 bits",
+            "64 bits",
+            "32 bits"
+          ]
+        },
+        {
+          "id": "q10",
+          "question": "Which method is the entry point of a Java program?",
+          "options": [
+            "start()",
+            "main()",
+            "run()",
+            "init()"
+          ]
+        },
+        {
+          "id": "q11",
+          "question": "Which of these is a valid way to create an array of 5 integers?",
+          "options": [
+            "int[] a = new int[5];",
+            "int a[5];",
+            "array int a = 5;",
+            "int a = new array(5);"
+          ]
+        },
+        {
+          "id": "q12",
+          "question": "Which loop is guaranteed to execute at least once?",
+          "options": [
+            "for",
+            "while",
+            "do-while",
+            "foreach"
+          ]
+        },
+        {
+          "id": "q13",
+          "question": "Which access modifier makes a member visible only within its own class?",
+          "options": [
+            "public",
+            "protected",
+            "private",
+            "default"
+          ]
+        },
+        {
+          "id": "q14",
+          "question": "Which interface must a class implement for Comparable sorting?",
+          "options": [
+            "Comparator",
+            "Comparable",
+            "Sortable",
+            "Ordered"
+          ]
+        },
+        {
+          "id": "q15",
+          "question": "What does the static keyword mean for a method?",
+          "options": [
+            "It can only be called once",
+            "It belongs to the class, not an instance",
+            "It cannot be overridden",
+            "It runs on a separate thread"
+          ]
+        },
+        {
+          "id": "q16",
+          "question": "Which of these correctly declares a constant in Java?",
+          "options": [
+            "const int X = 5;",
+            "final int X = 5;",
+            "static X = 5;",
+            "let X = 5;"
+          ]
+        },
+        {
+          "id": "q17",
+          "question": "What is method overloading?",
+          "options": [
+            "Same method name, different parameters",
+            "Same method name and parameters in a subclass",
+            "Calling a method too many times",
+            "A method that calls itself"
+          ]
+        },
+        {
+          "id": "q18",
+          "question": "Which of these is used to create an object in Java?",
+          "options": [
+            "new",
+            "create",
+            "make",
+            "object"
+          ]
+        },
+        {
+          "id": "q19",
+          "question": "Which String method returns the number of characters in a string?",
+          "options": [
+            "size()",
+            "count()",
+            "length()",
+            "len()"
+          ]
+        },
+        {
+          "id": "q20",
+          "question": "What is the parent class of all classes in Java?",
+          "options": [
+            "Main",
+            "Class",
+            "Object",
+            "Base"
+          ]
+        },
+        {
+          "id": "q21",
+          "question": "Which keyword is used to handle a block of code that always executes?",
+          "options": [
+            "catch",
+            "finally",
+            "throw",
+            "try"
+          ]
+        },
+        {
+          "id": "q22",
+          "question": "Which of these is a checked exception?",
+          "options": [
+            "NullPointerException",
+            "ArithmeticException",
+            "IOException",
+            "ArrayIndexOutOfBoundsException"
+          ]
+        },
+        {
+          "id": "q23",
+          "question": "What is the output of 5 / 2 in Java (both ints)?",
+          "options": [
+            "2.5",
+            "2",
+            "3",
+            "2.0"
+          ]
+        },
+        {
+          "id": "q24",
+          "question": "Which keyword allows a subclass method to call its parent's version?",
+          "options": [
+            "this",
+            "super",
+            "base",
+            "parent"
+          ]
+        },
+        {
+          "id": "q25",
+          "question": "Which of these is used for single-line comments in Java?",
+          "options": [
+            "/* */",
+            "//",
+            "#",
+            "--"
+          ]
+        },
+        {
+          "id": "q26",
+          "question": "What is an interface in Java?",
+          "options": [
+            "A class with only static methods",
+            "A blueprint of a class with abstract methods",
+            "A private class",
+            "A method with no body"
+          ]
+        },
+        {
+          "id": "q27",
+          "question": "Which of these correctly creates a String object?",
+          "options": [
+            "String s = \"hello\";",
+            "String s = new int(5);",
+            "String s = 5;",
+            "String s = char('a');"
+          ]
+        },
+        {
+          "id": "q28",
+          "question": "Which collection maintains insertion order and allows duplicates?",
+          "options": [
+            "HashSet",
+            "ArrayList",
+            "TreeSet",
+            "HashMap"
+          ]
+        },
+        {
+          "id": "q29",
+          "question": "What happens if you divide an integer by zero in Java?",
+          "options": [
+            "Returns 0",
+            "Returns infinity",
+            "Throws ArithmeticException",
+            "Returns null"
+          ]
+        },
+        {
+          "id": "q30",
+          "question": "Which keyword is used to to import a package in Java?",
+          "options": [
+            "include",
+            "import",
+            "using",
+            "package"
+          ]
+        }
+      ],
+      "codingSections": [
+        {
+          "id": "s1",
+          "name": "Section 1",
+          "marksPerQuestion": 5,
+          "questions": [
+            {
+              "id": "c1",
+              "title": "1. Sum of Two Numbers",
+              "description": "Read two integers and print their sum.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int a = sc.nextInt();\n        int b = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "3 4",
+                  "expectedOutput": "7"
+                }
+              ]
+            },
+            {
+              "id": "c2",
+              "title": "2. Even or Odd",
+              "description": "Read an integer and print \"Even\" or \"Odd\".",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "7",
+                  "expectedOutput": "Odd"
+                }
+              ]
+            },
+            {
+              "id": "c3",
+              "title": "3. Largest of Three Numbers",
+              "description": "Read three integers and print the largest.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int a = sc.nextInt(), b = sc.nextInt(), c = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "3 9 5",
+                  "expectedOutput": "9"
+                }
+              ]
+            },
+            {
+              "id": "c4",
+              "title": "4. Count Vowels in a String",
+              "description": "Read a word and print the number of vowels (a, e, i, o, u) in it.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "education",
+                  "expectedOutput": "5"
+                }
+              ]
+            },
+            {
+              "id": "c5",
+              "title": "5. Simple Interest",
+              "description": "Read principal, rate, and time (as integers). Print the simple interest as an integer: (P*R*T)/100.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int p = sc.nextInt(), r = sc.nextInt(), t = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "1000 5 2",
+                  "expectedOutput": "100"
+                }
+              ]
+            },
+            {
+              "id": "c6",
+              "title": "6. Check Palindrome String",
+              "description": "Read a word and print \"Yes\" if it reads the same forwards and backwards, else \"No\".",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "madam",
+                  "expectedOutput": "Yes"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s2",
+          "name": "Section 2",
+          "marksPerQuestion": 10,
+          "questions": [
+            {
+              "id": "c7",
+              "title": "1. Fibonacci Series up to N Terms",
+              "description": "Read an integer N. Print the first N Fibonacci numbers (starting 0, 1), space-separated on one line.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "5",
+                  "expectedOutput": "0 1 1 2 3"
+                }
+              ]
+            },
+            {
+              "id": "c8",
+              "title": "2. Reverse an Array",
+              "description": "Read N, then N integers. Print them reversed, space-separated on one line.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] arr = new int[n];\n        for (int i = 0; i < n; i++) arr[i] = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "5\n1 2 3 4 5",
+                  "expectedOutput": "5 4 3 2 1"
+                }
+              ]
+            },
+            {
+              "id": "c9",
+              "title": "3. Count Word Frequency",
+              "description": "Read an integer N, then N words. Print how many of them are exactly the word \"java\" (case-sensitive).",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int count = 0;\n        for (int i = 0; i < n; i++) {\n            String w = sc.next();\n            // TODO\n        }\n        System.out.println(count);\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "4\njava python java c",
+                  "expectedOutput": "2"
+                }
+              ]
+            },
+            {
+              "id": "c10",
+              "title": "4. Matrix Row Sums (2x2)",
+              "description": "Read 4 integers representing a 2x2 matrix, row by row. Print the sum of each row on its own line.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int[][] m = new int[2][2];\n        for (int i = 0; i < 2; i++)\n            for (int j = 0; j < 2; j++)\n                m[i][j] = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "1 2 3 4",
+                  "expectedOutput": "3\n7"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s3",
+          "name": "Section 3",
+          "marksPerQuestion": 15,
+          "questions": [
+            {
+              "id": "c11",
+              "title": "1. Employee Salary System (OOP + Inheritance)",
+              "description": "Read an employee's base salary and years of experience. If experience >= 5, bonus is 20% of base salary, else 10%. Print the total salary (base + bonus) as an integer.",
+              "starterCode": "import java.util.Scanner;\n\nclass Employee {\n    int baseSalary, experience;\n    Employee(int baseSalary, int experience) {\n        this.baseSalary = baseSalary;\n        this.experience = experience;\n    }\n    int totalSalary() {\n        // TODO: apply bonus rule and return total\n        return 0;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        Employee e = new Employee(sc.nextInt(), sc.nextInt());\n        System.out.println(e.totalSalary());\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "10000 6",
+                  "expectedOutput": "12000"
+                }
+              ]
+            },
+            {
+              "id": "c12",
+              "title": "2. Library Book Tracker (Collections + Exception Handling)",
+              "description": "Read N, then N book titles, then a title to search for. Print \"Found\" if it's in the list, else print \"Not Found\". Handle the case where N is 0 gracefully (no crash) by printing \"Not Found\".",
+              "starterCode": "import java.util.Scanner;\nimport java.util.ArrayList;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = Integer.parseInt(sc.nextLine().trim());\n        ArrayList<String> books = new ArrayList<>();\n        for (int i = 0; i < n; i++) books.add(sc.nextLine().trim());\n        String search = sc.hasNextLine() ? sc.nextLine().trim() : \"\";\n        // TODO: print \"Found\" or \"Not Found\"\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "3\nJava Basics\nData Structures\nAlgorithms\nData Structures",
+                  "expectedOutput": "Found"
                 }
               ]
             }
