@@ -704,6 +704,558 @@
           ]
         }
       ]
+    },
+    "batch8": {
+      "title": "Java Test(PSRR College)",
+      "language": "java",
+      "durationMinutes": 150,
+      "maxWarnings": 15,
+      "gradingMode": "fast",
+      "mcqs": [
+        {
+          "id": "q1",
+          "question": "Which of these is a non-primitive data type in Java?",
+          "options": [
+            "int",
+            "char",
+            "Array",
+            "boolean"
+          ]
+        },
+        {
+          "id": "q2",
+          "question": "What is the default value of an int instance variable?",
+          "options": [
+            "0",
+            "null",
+            "1",
+            "undefined"
+          ]
+        },
+        {
+          "id": "q3",
+          "question": "Which keyword is used to create a subclass in Java?",
+          "options": [
+            "extends",
+            "implements",
+            "inherits",
+            "override"
+          ]
+        },
+        {
+          "id": "q4",
+          "question": "Which of these is used to allocate memory dynamically for an object?",
+          "options": [
+            "new",
+            "malloc",
+            "alloc",
+            "create"
+          ]
+        },
+        {
+          "id": "q5",
+          "question": "Which of these is NOT an OOP concept?",
+          "options": [
+            "Inheritance",
+            "Polymorphism",
+            "Compilation",
+            "Encapsulation"
+          ]
+        },
+        {
+          "id": "q6",
+          "question": "Which keyword makes a variable accessible by all instances of a class?",
+          "options": [
+            "final",
+            "static",
+            "public",
+            "const"
+          ]
+        },
+        {
+          "id": "q7",
+          "question": "What is method overriding?",
+          "options": [
+            "Redefining a parent class method in a subclass with the same signature",
+            "Defining multiple methods with the same name in one class",
+            "Calling a method multiple times",
+            "Hiding a variable in a subclass"
+          ]
+        },
+        {
+          "id": "q8",
+          "question": "Which data structure uses FIFO (First In First Out) order?",
+          "options": [
+            "Stack",
+            "Queue",
+            "Tree",
+            "Graph"
+          ]
+        },
+        {
+          "id": "q9",
+          "question": "Which data structure uses LIFO (Last In First Out) order?",
+          "options": [
+            "Queue",
+            "Stack",
+            "ArrayList",
+            "LinkedList"
+          ]
+        },
+        {
+          "id": "q10",
+          "question": "Which Java collection interface represents a key-value pair structure?",
+          "options": [
+            "List",
+            "Set",
+            "Map",
+            "Queue"
+          ]
+        },
+        {
+          "id": "q11",
+          "question": "Which class should you use for a thread-safe, dynamically resizable array in older Java code?",
+          "options": [
+            "ArrayList",
+            "Vector",
+            "LinkedList",
+            "HashSet"
+          ]
+        },
+        {
+          "id": "q12",
+          "question": "Which interface does the HashMap class implement?",
+          "options": [
+            "List",
+            "Map",
+            "Set",
+            "Comparable"
+          ]
+        },
+        {
+          "id": "q13",
+          "question": "Which data structure is best suited for implementing recursion internally?",
+          "options": [
+            "Queue",
+            "Stack",
+            "Array",
+            "HashMap"
+          ]
+        },
+        {
+          "id": "q14",
+          "question": "Which collection class stores elements in sorted order?",
+          "options": [
+            "HashSet",
+            "LinkedHashSet",
+            "TreeSet",
+            "ArrayList"
+          ]
+        },
+        {
+          "id": "q15",
+          "question": "What is the time complexity of accessing an element by index in an ArrayList?",
+          "options": [
+            "O(n)",
+            "O(log n)",
+            "O(1)",
+            "O(n log n)"
+          ]
+        },
+        {
+          "id": "q16",
+          "question": "Which key is used to access the parent class variables and methods?",
+          "options": [
+            "this",
+            "super",
+            "extends",
+            "parent"
+          ]
+        },
+        {
+          "id": "q17",
+          "question": "The default value of a boolean is",
+          "options": [
+            "true",
+            "false",
+            "0",
+            "null"
+          ]
+        },
+        {
+          "id": "q18",
+          "question": "Which of these best describes a linked list compared to an array?",
+          "options": [
+            "Fixed size, contiguous memory",
+            "Dynamic size, nodes linked via references",
+            "Always sorted",
+            "Only stores primitive types"
+          ]
+        },
+        {
+          "id": "q19",
+          "question": "The k largest values can be found easily using",
+          "options": [
+            "Stack",
+            "Queue",
+            "Min-Heap (PriorityQueue)",
+            "LinkedList"
+          ]
+        },
+        {
+          "id": "q20",
+          "question": "What does the term \"encapsulation\" mean in Java?",
+          "options": [
+            "Wrapping data and methods together and restricting direct access",
+            "Creating multiple classes with the same name",
+            "Inheriting from multiple classes",
+            "Converting one data type to another"
+          ]
+        }
+      ],
+      "codingSections": [
+        {
+          "id": "s1",
+          "name": "Section A",
+          "marksPerQuestion": 6,
+          "questions": [
+            {
+              "id": "c1",
+              "title": "1. Check Palindrome Number",
+              "description": "Read an integer and print \"Yes\" if it is a palindrome (reads the same forwards and backwards), else print \"No\".",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "121",
+                  "expectedOutput": "Yes"
+                },
+                {
+                  "input": "123",
+                  "expectedOutput": "No"
+                }
+              ]
+            },
+            {
+              "id": "c2",
+              "title": "2. Odd or Even Number",
+              "description": "Read an integer and print \"Even\" if it is even, else print \"Odd\".",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "7",
+                  "expectedOutput": "Odd"
+                },
+                {
+                  "input": "12",
+                  "expectedOutput": "Even"
+                }
+              ]
+            },
+            {
+              "id": "c3",
+              "title": "3. Greatest of Two Numbers",
+              "description": "Read two integers and print the greater of the two.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int a = sc.nextInt();\n        int b = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "5 3",
+                  "expectedOutput": "5"
+                },
+                {
+                  "input": "2 9",
+                  "expectedOutput": "9"
+                }
+              ]
+            },
+            {
+              "id": "c4",
+              "title": "4. Square Pattern of Stars",
+              "description": "Read the number of rows and the number of columns, then print a rectangular pattern of stars (*) with that many rows and columns, one row per line.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int rows = sc.nextInt();\n        int cols = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "2 3",
+                  "expectedOutput": "***\n***"
+                },
+                {
+                  "input": "3 3",
+                  "expectedOutput": "***\n***\n***"
+                }
+              ]
+            },
+            {
+              "id": "c5",
+              "title": "5. Sum of Digits",
+              "description": "Read an integer and print the sum of its digits.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "123",
+                  "expectedOutput": "6"
+                },
+                {
+                  "input": "905",
+                  "expectedOutput": "14"
+                }
+              ]
+            },
+            {
+              "id": "c6",
+              "title": "6. Check Leap Year",
+              "description": "Read a year and print \"Yes\" if it is a leap year, else print \"No\".",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int year = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "2020",
+                  "expectedOutput": "Yes"
+                },
+                {
+                  "input": "1900",
+                  "expectedOutput": "No"
+                }
+              ]
+            },
+            {
+              "id": "c7",
+              "title": "7. Index of Character in String",
+              "description": "Read a word and a character (space-separated). Print the index (0-based) of the first occurrence of the character in the word, or -1 if it is not found.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        char c = sc.next().charAt(0);\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "hello l",
+                  "expectedOutput": "2"
+                },
+                {
+                  "input": "world w",
+                  "expectedOutput": "0"
+                }
+              ]
+            },
+            {
+              "id": "c8",
+              "title": "8. Factorial of a Number",
+              "description": "Read a non-negative integer and print its factorial.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "5",
+                  "expectedOutput": "120"
+                },
+                {
+                  "input": "0",
+                  "expectedOutput": "1"
+                }
+              ]
+            },
+            {
+              "id": "c9",
+              "title": "9. Vowel or Consonant",
+              "description": "Read a single character and print \"Vowel\" if it is a vowel (a, e, i, o, u, either case), else print \"Consonant\".",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        char c = sc.next().charAt(0);\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "a",
+                  "expectedOutput": "Vowel"
+                },
+                {
+                  "input": "b",
+                  "expectedOutput": "Consonant"
+                }
+              ]
+            },
+            {
+              "id": "c10",
+              "title": "10. ASCII Value of a Character",
+              "description": "Read a single character and print its ASCII value.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        char c = sc.next().charAt(0);\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "A",
+                  "expectedOutput": "65"
+                },
+                {
+                  "input": "a",
+                  "expectedOutput": "97"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s2",
+          "name": "Section B",
+          "marksPerQuestion": 10,
+          "questions": [
+            {
+              "id": "c11",
+              "title": "1. Maximum Element in an Array",
+              "description": "Read an integer N, then N integers. Print the maximum element in the array.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] arr = new int[n];\n        for (int i = 0; i < n; i++) arr[i] = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "5\n3 7 2 9 4",
+                  "expectedOutput": "9"
+                },
+                {
+                  "input": "3\n1 1 1",
+                  "expectedOutput": "1"
+                }
+              ]
+            },
+            {
+              "id": "c12",
+              "title": "2. Sum of All Elements in an Array",
+              "description": "Read an integer N, then N integers. Print the sum of all the elements.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] arr = new int[n];\n        for (int i = 0; i < n; i++) arr[i] = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "5\n1 2 3 4 5",
+                  "expectedOutput": "15"
+                },
+                {
+                  "input": "3\n10 20 30",
+                  "expectedOutput": "60"
+                }
+              ]
+            },
+            {
+              "id": "c13",
+              "title": "3. Right-Angled Triangle Pattern of Stars",
+              "description": "Read an integer N (number of rows). Print a right-angled triangle of stars where row i contains i stars, one row per line.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "3",
+                  "expectedOutput": "*\n**\n***"
+                },
+                {
+                  "input": "5",
+                  "expectedOutput": "*\n**\n***\n****\n*****"
+                }
+              ]
+            },
+            {
+              "id": "c14",
+              "title": "4. Check String Palindrome",
+              "description": "Read a word and print \"Yes\" if it reads the same forwards and backwards, else print \"No\".",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        // TODO\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "madam",
+                  "expectedOutput": "Yes"
+                },
+                {
+                  "input": "hello",
+                  "expectedOutput": "No"
+                }
+              ]
+            },
+            {
+              "id": "c15",
+              "title": "5. Method Overloading - Add Integers and Doubles",
+              "description": "Read a type (\"int\" or \"double\") followed by two numbers of that type. Using method overloading, call an add(int, int) method for integer input or an add(double, double) method for double input, and print the result.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    static int add(int a, int b) {\n        // TODO\n        return 0;\n    }\n\n    static double add(double a, double b) {\n        // TODO\n        return 0;\n    }\n\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String type = sc.next();\n        // TODO: read two numbers based on 'type' and call the matching add() method\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "int\n2 3",
+                  "expectedOutput": "5"
+                },
+                {
+                  "input": "double\n2.5 3.5",
+                  "expectedOutput": "6.0"
+                }
+              ]
+            },
+            {
+              "id": "c16",
+              "title": "6. Divide Two Numbers with Exception Handling",
+              "description": "Read two integers a and b. Try to print the result of a / b. If b is zero, catch the ArithmeticException and print \"Cannot divide by zero\" instead.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int a = sc.nextInt();\n        int b = sc.nextInt();\n        try {\n            // TODO\n        } catch (ArithmeticException e) {\n            // TODO\n        }\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "10 2",
+                  "expectedOutput": "5"
+                },
+                {
+                  "input": "7 0",
+                  "expectedOutput": "Cannot divide by zero"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s3",
+          "name": "Section C",
+          "marksPerQuestion": 15,
+          "questions": [
+            {
+              "id": "c17",
+              "title": "1. In-order Traversal of a Binary Search Tree",
+              "description": "Read an integer N, then N integers. Insert them one by one into a Binary Search Tree, then print the in-order traversal of the tree, space-separated on one line.",
+              "starterCode": "import java.util.Scanner;\n\nclass Node {\n    int val;\n    Node left, right;\n    Node(int val) { this.val = val; }\n}\n\npublic class Main {\n    static Node insert(Node root, int val) {\n        if (root == null) {\n            return new Node(val);\n        }\n        if (val < root.val) {\n            root.left = insert(root.left, val);\n        } else {\n            root.right = insert(root.right, val);\n        }\n        return root;\n    }\n\n    static void inorder(Node root) {\n        \n    }\n\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        Node root = null;\n        for (int i = 0; i < n; i++) {\n            root = insert(root, sc.nextInt());\n        }\n        inorder(root);\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "5\n5 3 8 1 4",
+                  "expectedOutput": "1 3 4 5 8"
+                },
+                {
+                  "input": "3\n2 1 3",
+                  "expectedOutput": "1 2 3"
+                }
+              ]
+            },
+            {
+              "id": "c18",
+              "title": "2. Reverse a Linked List",
+              "description": "Read an integer N, then N integers. Build a singly linked list from them in the given order, reverse the linked list, and print the reversed list, space-separated on one line.",
+              "starterCode": "import java.util.Scanner;\n\nclass Node {\n    int val;\n    Node next;\n    Node(int val) { this.val = val; }\n}\n\npublic class Main {\n    static Node reverse(Node head) {\n        Node prev = null;\n        Node curr = head;\n        while (curr != null) {\n            Node next = curr.next;\n            //write code\n        }\n        return prev;\n    }\n\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        Node head = null, tail = null;\n        for (int i = 0; i < n; i++) {\n            Node node = new Node(sc.nextInt());\n            if (head == null) { head = node; tail = node; }\n            else { tail.next = node; tail = node; }\n        }\n        head = reverse(head);\n        while (head != null) {\n            System.out.print(head.val);\n            if (head.next != null) System.out.print(\" \");\n            head = head.next;\n        }\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "5\n1 2 3 4 5",
+                  "expectedOutput": "5 4 3 2 1"
+                },
+                {
+                  "input": "3\n7 8 9",
+                  "expectedOutput": "9 8 7"
+                }
+              ]
+            },
+            {
+              "id": "c19",
+              "title": "3. Store and Display Integers Using ArrayList",
+              "description": "Read an integer N, then N integers. Store them in an ArrayList<Integer> and print all the values in it, space-separated on one line.",
+              "starterCode": "import java.util.Scanner;\nimport java.util.ArrayList;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        //create arraylist here(initialize)\n        for (int i = 0; i < n; i++) {\n            list.add(sc.nextInt());\n        }\n        // TODO: print all values in the ArrayList, space-separated\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "4\n1 2 3 4",
+                  "expectedOutput": "1 2 3 4"
+                },
+                {
+                  "input": "3\n10 20 30",
+                  "expectedOutput": "10 20 30"
+                }
+              ]
+            },
+            {
+              "id": "c20",
+              "title": "4. Sort an Array Using Selection Sort",
+              "description": "Read an integer N, then N integers. Sort the array in ascending order using the selection sort technique, then print the sorted array, space-separated on one line.",
+              "starterCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] arr = new int[n];\n        for (int i = 0; i < n; i++) arr[i] = sc.nextInt();\n        // TODO: sort arr using selection sort, then print it space-separated\n    }\n}",
+              "visibleTests": [
+                {
+                  "input": "5\n5 3 8 1 4",
+                  "expectedOutput": "1 3 4 5 8"
+                },
+                {
+                  "input": "4\n9 1 4 3",
+                  "expectedOutput": "1 3 4 9"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   }
 }
