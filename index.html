@@ -104,10 +104,14 @@
   <div class="card hidden" id="passwordCard">
     <h2 id="testTitle">Enter test password</h2>
     <div id="privateModeStatus" class="runner-status">Checking browser mode…</div>
+    <label id="privateModeFallbackRow" class="hidden" style="display:flex;align-items:flex-start;gap:8px;font-weight:400;margin:10px 0 14px;">
+      <input type="checkbox" id="privateModeConfirm" onchange="updateContinueButton();">
+      <span>I confirm I am using an Incognito/Private window (this browser doesn't let us verify that automatically).</span>
+    </label>
     <button class="secondary" onclick="checkPrivateModeStatus()" id="pmRecheckBtn" style="margin-bottom:10px;">Check Again</button>
     <label for="pwInput">Password (given by your instructor)</label>
     <input type="password" id="pwInput" autocomplete="off">
-    <button onclick="checkPassword()" id="pwContinueBtn">Continue</button>
+    <button onclick="checkPassword()" id="pwContinueBtn" disabled>Continue</button>
     <div id="pwError" style="color:var(--warn);font-size:13px;margin-top:8px;"></div>
   </div>
 
@@ -156,6 +160,18 @@
 </div>
 
 <div id="printResultArea"></div>
+
+<div id="submitConfirmOverlay" class="fs-overlay hidden">
+  <div style="background:var(--panel); color:var(--ink); border-radius:12px; padding:28px; max-width:400px; text-align:center;">
+    <div style="font-size:18px;font-weight:700;margin-bottom:10px;">Submit your test?</div>
+    <div id="submitConfirmDetail" style="font-size:14px;color:#666;margin-bottom:20px;white-space:pre-wrap;"></div>
+    <div style="font-size:13px;color:var(--warn);margin-bottom:16px;">This cannot be undone — you will not be able to change any answer after this.</div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="secondary" onclick="closeSubmitConfirm()">Go Back</button>
+      <button id="confirmSubmitBtn" disabled onclick="closeSubmitConfirm(); doSubmit(false);">Yes, Submit Final Answer (3)</button>
+    </div>
+  </div>
+</div>
 
 <div id="fsOverlay" class="fs-overlay hidden">
   <div style="font-size:18px;font-weight:600;">You left fullscreen</div>
@@ -299,11 +315,6 @@ function updateStartButtonState() {
 // localStorage-write heuristics that catch most cases on Chrome/Edge/Safari
 // but are NOT cryptographically certain and can change with browser updates.
 // Returns 'private', 'normal', or 'unknown' (detection not possible here).
-//
-// IMPORTANT: this is informational only. It is intentionally NOT used to
-// block or gate the Continue button — the heuristic produces false
-// positives against genuine Incognito users on some browsers/versions, and
-// a detector that blocks honest students is worse than no detector at all.
 let privateModeResult = 'unknown';
 
 async function detectPrivateMode() {
@@ -327,19 +338,31 @@ async function detectPrivateMode() {
 
 async function checkPrivateModeStatus() {
   const statusEl = document.getElementById('privateModeStatus');
+  const fallbackRow = document.getElementById('privateModeFallbackRow');
   statusEl.innerHTML = '<span class="spinner"></span>Checking browser mode… please wait.';
   statusEl.className = 'runner-status';
   privateModeResult = await detectPrivateMode();
   if (privateModeResult === 'private') {
     statusEl.textContent = '✓ Private/Incognito browsing detected.';
     statusEl.className = 'runner-status runner-ok';
+    fallbackRow.classList.add('hidden');
   } else if (privateModeResult === 'normal') {
-    statusEl.textContent = '⚠ This looks like a normal (non-private) window. If you meant to use Incognito/Private mode, open this link there instead — otherwise you can just continue.';
+    statusEl.textContent = '⚠ This looks like a normal (non-private) browser window. Open this link in an Incognito/Private window (Ctrl+Shift+N) and reload the page.';
     statusEl.className = 'runner-status runner-bad';
+    fallbackRow.classList.add('hidden'); // reliable negative result — no override
   } else {
-    statusEl.textContent = 'ℹ Could not automatically verify browsing mode on this browser — that\'s expected on some browsers, not an error. You can continue.';
-    statusEl.className = 'runner-status';
+    statusEl.textContent = '⚠ Could not automatically verify private browsing on this browser.';
+    statusEl.className = 'runner-status runner-bad';
+    fallbackRow.classList.remove('hidden');
   }
+  updateContinueButton();
+}
+
+function updateContinueButton() {
+  const btn = document.getElementById('pwContinueBtn');
+  const ready = privateModeResult === 'private' ||
+    (privateModeResult === 'unknown' && document.getElementById('privateModeConfirm').checked);
+  btn.disabled = !ready;
 }
 
 async function checkPassword() {
@@ -376,6 +399,33 @@ function loadState() {
 }
 function saveState() { localStorage.setItem(storeKey, JSON.stringify(state)); }
 
+// Backs up progress to the server so a teacher-granted reattempt or a
+// crashed/switched device can actually resume — not just localStorage,
+// which only ever helped if the student stayed on the exact same browser.
+// Debounced to at most once every 45s to stay well within GitHub's API
+// rate limits across a full class submitting concurrently.
+let progressSaveTimer = null;
+let progressSaveInFlight = false;
+function scheduleProgressSave() {
+  if (progressSaveTimer || !testStarted || submitted) return;
+  progressSaveTimer = setTimeout(async () => {
+    progressSaveTimer = null;
+    if (progressSaveInFlight || submitted) return;
+    progressSaveInFlight = true;
+    try {
+      await fetch(SITE.apiUrl, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'saveProgress', testId, rollNumber: student.roll, name: student.name,
+          mcqAnswers: state.mcqAnswers, codingCode: state.codingCode,
+          integrity: { warnings: state.warnings }
+        })
+      });
+    } catch (e) { /* best-effort — localStorage still has it locally */ }
+    progressSaveInFlight = false;
+  }, 45000);
+}
+
 async function startTest() {
   const roll = document.getElementById('rollInput').value.trim();
   const name = document.getElementById('nameInput').value.trim();
@@ -384,19 +434,36 @@ async function startTest() {
 
   const startBtn = document.getElementById('startTestBtn');
   startBtn.disabled = true; startBtn.textContent = 'Checking…';
-  try {
-    const resp = await fetch(SITE.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'checkSubmitted', testId, rollNumber: roll }) });
-    const data = await resp.json();
-    if (data.submitted) { showAlreadySubmitted(data.record); return; }
-  } catch (err) {
-    // if the check itself fails (offline etc.), fall through and let them try —
-    // Submit will still be checked server-side again at that point via checkSubmitted-equivalent logic if needed
-  }
-  startBtn.disabled = false; startBtn.textContent = 'Start Test (enters fullscreen)';
 
-  storeKey = 'javatest_progress_' + testId + '_' + roll;
-  loadState();
-  if (!state.startTime) { state.startTime = Date.now(); saveState(); }
+  try {
+    const subResp = await fetch(SITE.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'checkSubmitted', testId, rollNumber: roll }) });
+    const subData = await subResp.json();
+    if (subData.submitted) { showAlreadySubmitted(subData.record); return; }
+
+    // Server is the single source of truth for when this attempt actually
+    // started, and for any progress already saved (from this or another
+    // device). This is what fixes the timer bug — a stray earlier click
+    // can no longer silently keep ticking unnoticed, and a genuine
+    // resume/reattempt now works even on a different browser.
+    const startResp = await fetch(SITE.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'startAttempt', testId, rollNumber: roll, name }) });
+    const startData = await startResp.json();
+    if (startData.error) throw new Error(startData.error);
+
+    storeKey = 'javatest_progress_' + testId + '_' + roll;
+    state = { mcqAnswers: {}, codingCode: {}, startTime: new Date(startData.startedAt).getTime(), warnings: 0 };
+    if (startData.progress) {
+      state.mcqAnswers = startData.progress.mcqAnswers || {};
+      state.codingCode = startData.progress.codingCode || {};
+      state.warnings = startData.progress.warnings || 0;
+    }
+    saveState();
+  } catch (err) {
+    alert('Could not start the test — check your internet connection and try again.\n(' + err.message + ')');
+    startBtn.disabled = false; startBtn.textContent = 'Start Test (enters fullscreen)';
+    return;
+  }
+
+  startBtn.disabled = false; startBtn.textContent = 'Start Test (enters fullscreen)';
 
   document.getElementById('loginCard').classList.add('hidden');
   document.getElementById('testArea').classList.remove('hidden');
@@ -405,6 +472,7 @@ async function startTest() {
   updateWarnDisplay();
 
   testStarted = true;
+  setInterval(scheduleProgressSave, 60000); // heartbeat, even if they're just reading, not typing
   requestFullscreen();
   renderMCQs();
   renderCoding();
@@ -458,7 +526,7 @@ function addWarning(reason) {
   saveState();
   updateWarnDisplay();
   const max = TEST.maxWarnings || 3;
-  if (state.warnings >= max) {
+  if (state.warnings === max) {
     alert('Maximum warnings (' + max + ') reached. Your test is being submitted automatically.');
     doSubmit(true);
   }
@@ -574,7 +642,7 @@ function renderMCQs() {
     list.appendChild(div);
   });
 }
-function setMcqAnswer(qid, idx) { state.mcqAnswers[qid] = idx; saveState(); updateAnsweredCount(); }
+function setMcqAnswer(qid, idx) { state.mcqAnswers[qid] = idx; saveState(); updateAnsweredCount(); scheduleProgressSave(); }
 
 function flatCodingQuestions() {
   const flat = [];
@@ -644,7 +712,7 @@ function renderCoding() {
       cm.on('beforeChange', (instance, change) => {
         if (change.origin === 'paste') { change.cancel(); showToast('Pasting is disabled during the test.'); }
       });
-      cm.on('change', () => { state.codingCode[q.id] = cm.getValue(); saveState(); updateAnsweredCount(); });
+      cm.on('change', () => { state.codingCode[q.id] = cm.getValue(); saveState(); updateAnsweredCount(); scheduleProgressSave(); });
       cmEditors[q.id] = cm;
     });
   });
@@ -770,77 +838,70 @@ function updateAnsweredCount() {
 function confirmSubmit() {
   const answered = Object.keys(state.mcqAnswers).length;
   const codedCount = flatCodingQuestions().filter(q => (state.codingCode[q.id] || '').trim() && state.codingCode[q.id] !== q.starterCode).length;
-  const msg = `MCQs answered: ${answered}/${TEST.mcqs.length}\nCoding questions touched: ${codedCount}/${flatCodingQuestions().length}\n\nOnce submitted, you cannot make changes. Submit now?`;
-  if (confirm(msg)) doSubmit(false);
+  document.getElementById('submitConfirmDetail').textContent =
+    `MCQs answered: ${answered}/${TEST.mcqs.length}\nCoding questions touched: ${codedCount}/${flatCodingQuestions().length}`;
+
+  const btn = document.getElementById('confirmSubmitBtn');
+  btn.disabled = true;
+  let secondsLeft = 3;
+  btn.textContent = `Yes, Submit Final Answer (${secondsLeft})`;
+  const countdown = setInterval(() => {
+    secondsLeft--;
+    if (secondsLeft <= 0) {
+      clearInterval(countdown);
+      btn.disabled = false;
+      btn.textContent = 'Yes, Submit Final Answer';
+    } else {
+      btn.textContent = `Yes, Submit Final Answer (${secondsLeft})`;
+    }
+  }, 1000);
+
+  document.getElementById('submitConfirmOverlay').classList.remove('hidden');
+}
+function closeSubmitConfirm() {
+  document.getElementById('submitConfirmOverlay').classList.add('hidden');
 }
 
+let autoSubmitAlertShown = false;
 async function doSubmit(auto) {
   if (submitted) return;
+  clearInterval(timerInterval); // stop the clock immediately either way — prevents an alert loop if this was timer-triggered
+
+  if (!localRunnerAvailable) {
+    await checkLocalRunner(); // one fresh check in case it just started
+  }
+  if (!localRunnerAvailable) {
+    if (!autoSubmitAlertShown || !auto) {
+      autoSubmitAlertShown = true;
+      alert('Your local runner is not available right now.\n\nPlease make sure LocalRunner is running (java LocalRunner in its folder), then click Submit again. Your answers are safely saved and nothing has been lost.');
+    }
+    return;
+  }
+  autoSubmitAlertShown = false;
+
   submitted = true;
   const btn = document.getElementById('finalSubmitBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Submitting… verifying your answers, please wait'; }
-  clearInterval(timerInterval);
+  if (btn) { btn.disabled = true; btn.textContent = 'Grading with your local runner…'; }
   document.getElementById('fsOverlay').classList.add('hidden');
 
   flatCodingQuestions().forEach(q => { if (cmEditors[q.id]) state.codingCode[q.id] = cmEditors[q.id].getValue(); });
   saveState();
 
-  const mode = TEST.gradingMode === 'secure' ? 'secure' : 'fast';
-
-  if (mode === 'fast') {
-    // Fast (local): grades on the student's own machine using their local
-    // runner, then sends the already-computed score to the server — no
-    // waiting on a server-side recompile/rerun for every submission.
-    // Trade-off: a technically-inclined student could in principle forge
-    // their own score via DevTools, so this is meant for supervised rooms.
-    try {
-      if (!localRunnerAvailable) throw new Error('Local runner not available.');
-      const graded = await gradeLocallyAndSubmit();
-      if (!graded) throw new Error('Local grading failed.');
-      return;
-    } catch (err) {
-      try {
-        if (btn) btn.textContent = 'Local grading unavailable — falling back to server…';
-        await submitViaServerFallback();
-      } catch (err2) {
-        alert('Submission failed: ' + err2.message + '\nPlease try submitting again.');
-        submitted = false;
-        if (btn) { btn.disabled = false; btn.textContent = 'Submit Test'; }
-      }
-    }
-    return;
-  }
-
-  // Secure (server-verified): the server independently recompiles and
-  // re-runs every answer, so nobody can influence their own score from the
-  // browser. Slower per submission — pick this only when you need it.
   try {
-    await submitViaServerFallback();
+    const graded = await gradeLocallyAndSubmit();
+    if (!graded) throw new Error('Local grading did not complete — your local runner may have stopped mid-way.');
   } catch (err) {
-    if (localRunnerAvailable) {
-      try {
-        if (btn) btn.textContent = 'Server unreachable — grading locally as a backup…';
-        const graded = await gradeLocallyAndSubmit();
-        if (!graded) throw new Error('Local grading also failed.');
-        return;
-      } catch (err2) {
-        alert('Submission failed: ' + err2.message + '\nPlease try submitting again.');
-        submitted = false;
-        if (btn) { btn.disabled = false; btn.textContent = 'Submit Test'; }
-        return;
-      }
-    }
-    alert('Submission failed: ' + err.message + '\nPlease try submitting again.');
+    alert('Submission failed: ' + err.message + '\nYour answers are still saved — make sure LocalRunner is running, then click Submit again.');
     submitted = false;
     if (btn) { btn.disabled = false; btn.textContent = 'Submit Test'; }
   }
 }
 
-// FAST PATH: fetch the full answer key, grade with the student's own JDK,
-// send the already-computed score to the server just to store it.
-// NOTE: this means all test cases (including ones marked hidden) are
-// downloaded to the browser at submit time to run them locally — a
-// deliberate speed/trust trade-off chosen for this test.
+// The ONLY grading path: fetches the full answer key, grades with the
+// student's own JDK/compiler, sends the already-computed score to the
+// server just to store it. This means all test cases (including ones
+// marked hidden) are downloaded to the browser at submit time to run them
+// locally — a deliberate speed/trust trade-off for this test.
 async function gradeLocallyAndSubmit() {
   const gd = await ensureGradingData();
   const flat = flattenGradingSections(gd.codingSections);
@@ -903,20 +964,6 @@ async function gradeLocallyAndSubmit() {
 }
 
 // SLOW FALLBACK: only used if the local runner isn't reachable at submit time.
-async function submitViaServerFallback() {
-  const resp = await fetch(SITE.apiUrl, {
-    method: 'POST',
-    body: JSON.stringify({
-      action: 'submit', testId, rollNumber: student.roll, name: student.name,
-      mcqAnswers: state.mcqAnswers, codingCode: state.codingCode, language: TEST.language || 'java',
-      integrity: { warnings: state.warnings }
-    })
-  });
-  const data = await resp.json();
-  if (data.error || !data.ok) throw new Error(data.error || data.saveError || 'unknown error');
-  finishSubmit(data);
-}
-
 function finishSubmit(data) {
   localStorage.setItem('javatest_submitted_' + testId + '_' + student.roll, JSON.stringify(data));
   document.getElementById('testArea').classList.add('hidden');
