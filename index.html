@@ -103,15 +103,9 @@
 
   <div class="card hidden" id="passwordCard">
     <h2 id="testTitle">Enter test password</h2>
-    <div id="privateModeStatus" class="runner-status">Checking browser mode…</div>
-    <label id="privateModeFallbackRow" class="hidden" style="display:flex;align-items:flex-start;gap:8px;font-weight:400;margin:10px 0 14px;">
-      <input type="checkbox" id="privateModeConfirm" onchange="updateContinueButton();">
-      <span>I confirm I am using an Incognito/Private window (this browser doesn't let us verify that automatically).</span>
-    </label>
-    <button class="secondary" onclick="checkPrivateModeStatus()" id="pmRecheckBtn" style="margin-bottom:10px;">Check Again</button>
     <label for="pwInput">Password (given by your instructor)</label>
     <input type="password" id="pwInput" autocomplete="off">
-    <button onclick="checkPassword()" id="pwContinueBtn" disabled>Continue</button>
+    <button onclick="checkPassword()" id="pwContinueBtn">Continue</button>
     <div id="pwError" style="color:var(--warn);font-size:13px;margin-top:8px;"></div>
   </div>
 
@@ -223,7 +217,6 @@ async function init() {
     document.getElementById('loadingCard').classList.add('hidden');
     document.getElementById('passwordCard').classList.remove('hidden');
     initTheme();
-    checkPrivateModeStatus();
     checkLocalRunner();
   } catch (err) {
     document.getElementById('loadingCard').innerHTML =
@@ -309,62 +302,6 @@ function updateStartButtonState() {
   note.classList.toggle('hidden', ready);
 }
 
-// Best-effort private/Incognito browsing detection. Browsers deliberately
-// make this hard to detect (it would defeat the point of private mode if
-// websites could reliably tell), so this uses storage-quota and
-// localStorage-write heuristics that catch most cases on Chrome/Edge/Safari
-// but are NOT cryptographically certain and can change with browser updates.
-// Returns 'private', 'normal', or 'unknown' (detection not possible here).
-let privateModeResult = 'unknown';
-
-async function detectPrivateMode() {
-  try {
-    if (navigator.storage && navigator.storage.estimate) {
-      const est = await navigator.storage.estimate();
-      const quotaMB = (est.quota || 0) / (1024 * 1024);
-      if (quotaMB > 0 && quotaMB < 300) return 'private';
-      if (quotaMB >= 300) return 'normal';
-    }
-  } catch (e) {}
-  try {
-    const testKey = '__pm_test__';
-    localStorage.setItem(testKey, '1');
-    localStorage.removeItem(testKey);
-  } catch (e) {
-    return 'private'; // some Safari versions block localStorage writes in private mode
-  }
-  return 'unknown';
-}
-
-async function checkPrivateModeStatus() {
-  const statusEl = document.getElementById('privateModeStatus');
-  const fallbackRow = document.getElementById('privateModeFallbackRow');
-  statusEl.innerHTML = '<span class="spinner"></span>Checking browser mode… please wait.';
-  statusEl.className = 'runner-status';
-  privateModeResult = await detectPrivateMode();
-  if (privateModeResult === 'private') {
-    statusEl.textContent = '✓ Private/Incognito browsing detected.';
-    statusEl.className = 'runner-status runner-ok';
-    fallbackRow.classList.add('hidden');
-  } else if (privateModeResult === 'normal') {
-    statusEl.textContent = '⚠ This looks like a normal (non-private) browser window. Open this link in an Incognito/Private window (Ctrl+Shift+N) and reload the page.';
-    statusEl.className = 'runner-status runner-bad';
-    fallbackRow.classList.add('hidden'); // reliable negative result — no override
-  } else {
-    statusEl.textContent = '⚠ Could not automatically verify private browsing on this browser.';
-    statusEl.className = 'runner-status runner-bad';
-    fallbackRow.classList.remove('hidden');
-  }
-  updateContinueButton();
-}
-
-function updateContinueButton() {
-  const btn = document.getElementById('pwContinueBtn');
-  const ready = privateModeResult === 'private' ||
-    (privateModeResult === 'unknown' && document.getElementById('privateModeConfirm').checked);
-  btn.disabled = !ready;
-}
-
 async function checkPassword() {
   const pw = document.getElementById('pwInput').value;
   const errEl = document.getElementById('pwError');
@@ -438,7 +375,7 @@ async function startTest() {
   try {
     const subResp = await fetch(SITE.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'checkSubmitted', testId, rollNumber: roll }) });
     const subData = await subResp.json();
-    if (subData.submitted) { showAlreadySubmitted(subData.record); return; }
+    if (subData.submitted) { await showAlreadySubmitted(subData.record); return; }
 
     // Server is the single source of truth for when this attempt actually
     // started, and for any progress already saved (from this or another
@@ -481,11 +418,17 @@ async function startTest() {
   setupIntegrityWatchers();
 }
 
-function showAlreadySubmitted(data) {
+async function showAlreadySubmitted(data) {
   document.getElementById('loginCard').classList.add('hidden');
   document.getElementById('submitScreen').classList.remove('hidden');
   if (data) {
-    document.getElementById('scoreDisplay').textContent = data.totalScore + ' / ' + data.maxScore;
+    // Best-effort: populates gradingDataCache.marksConfig so resolveScoreMaxes
+    // can use the test's real per-MCQ mark value instead of assuming 1 — this
+    // student hasn't graded anything in THIS page load, so the cache is
+    // otherwise empty at this point.
+    try { await ensureGradingData(); } catch (e) { /* fall back to defaults inside resolveScoreMaxes */ }
+    const { totalMax } = resolveScoreMaxes(data);
+    document.getElementById('scoreDisplay').textContent = data.totalScore + ' / ' + totalMax;
     document.getElementById('scoreBreak').textContent = 'You have already submitted this test. If you believe this is wrong, contact your instructor.';
     document.getElementById('resultTableWrap').innerHTML = buildResultTableHtml(data);
     localStorage.setItem('javatest_submitted_' + testId + '_' + student.roll, JSON.stringify(data));
@@ -657,6 +600,28 @@ function languageLabel(language) {
   return { java: 'Java', c: 'C', cpp: 'C++', python: 'Python' }[language] || language;
 }
 
+// Works out the true "out of" values for MCQ and Coding straight from the
+// test definition this browser already loaded (TEST.mcqs, TEST.codingSections)
+// — never by subtracting one score from another. That subtraction trick
+// (maxScore - codingMax, then maxScore - thatResult) silently collapses to
+// "mcqMax = mcqScore" whenever anything upstream is missing, which is why a
+// missing sectionTotals field could show "1 out of 1" for a 20-question
+// section. Prefers an explicit number the server/record actually supplied
+// (data.mcqMax / data.codingMax) when present, and otherwise recomputes
+// independently so a bad or incomplete response can never quietly show a
+// wrong maximum.
+function resolveScoreMaxes(data) {
+  const mcqEach = (gradingDataCache && gradingDataCache.marksConfig && typeof gradingDataCache.marksConfig.mcqEach === 'number')
+    ? gradingDataCache.marksConfig.mcqEach : 1;
+  const mcqMax = (typeof data.mcqMax === 'number')
+    ? data.mcqMax
+    : (TEST.mcqs || []).length * mcqEach;
+  const codingMax = (typeof data.codingMax === 'number')
+    ? data.codingMax
+    : flatCodingQuestions().reduce((s, q) => s + (q.marksPerQuestion || 0), 0);
+  return { mcqMax, codingMax, totalMax: mcqMax + codingMax };
+}
+
 // ============ Coding ============
 function renderCoding() {
   const container = document.getElementById('codingList');
@@ -767,7 +732,7 @@ async function runVisibleTests(qid) {
     resultEl.innerHTML = '<div class="result-line">No sample test cases provided for this question.</div>';
     return;
   }
-  statusEl.textContent = 'Running on your local JDK…';
+  statusEl.textContent = 'Test case is validating, running, kindly wait…';
   let html = '';
   for (let i = 0; i < q.visibleTests.length; i++) {
     const t = q.visibleTests[i];
@@ -921,9 +886,12 @@ async function gradeLocallyAndSubmit() {
   let codingScore = 0;
   const codingDetail = {};
   const btn = document.getElementById('finalSubmitBtn');
-  for (const qid in flat) {
+  const codingQids = Object.keys(flat);
+  let codingQuestionNumber = 0;
+  for (const qid of codingQids) {
+    codingQuestionNumber++;
     const { tests, marksPerQuestion } = flat[qid];
-    if (btn) btn.textContent = 'Grading ' + qid + ' locally…';
+    if (btn) btn.textContent = 'Grading coding question ' + codingQuestionNumber + ' of ' + codingQids.length + '. Kindly wait…';
     const code = state.codingCode[qid] || '';
     let results;
     try {
@@ -949,6 +917,18 @@ async function gradeLocallyAndSubmit() {
   const totalScore = mcqScore + codingScore;
   const maxScore = mcqMax + codingMax;
 
+  // Section-by-section breakdown, built directly from TEST.codingSections —
+  // includes the section name right here, so nothing downstream has to
+  // guess it from a bare section id.
+  const sectionTotals = {};
+  (TEST.codingSections || []).forEach(sec => {
+    const qids = (sec.questions || []).map(q => q.id);
+    const secMax = qids.length * sec.marksPerQuestion;
+    let obtained = 0;
+    qids.forEach(qid => { if (codingDetail[qid]) obtained += codingDetail[qid].awarded || 0; });
+    sectionTotals[sec.id] = { name: sec.name, obtained, max: secMax };
+  });
+
   const resp = await fetch(SITE.apiUrl, {
     method: 'POST',
     body: JSON.stringify({
@@ -957,9 +937,16 @@ async function gradeLocallyAndSubmit() {
       integrity: { warnings: state.warnings }
     })
   });
-  const data = await resp.json();
-  if (data.error || !data.ok) throw new Error(data.error || data.saveError || 'unknown error');
-  finishSubmit(data);
+  const respData = await resp.json();
+  if (respData.error || !respData.ok) throw new Error(respData.error || respData.saveError || 'unknown error');
+
+  // The server's reply only confirms the save (ok/saved) — the actual score
+  // numbers shown to the student come from what THIS browser just computed
+  // while grading, since that's the same data used to grade in the first
+  // place and can't drift from it.
+  finishSubmit(Object.assign({}, respData, {
+    mcqScore, codingScore, totalScore, maxScore, mcqMax, codingMax, mcqDetail, codingDetail, sectionTotals
+  }));
   return true;
 }
 
@@ -968,7 +955,8 @@ function finishSubmit(data) {
   localStorage.setItem('javatest_submitted_' + testId + '_' + student.roll, JSON.stringify(data));
   document.getElementById('testArea').classList.add('hidden');
   document.getElementById('submitScreen').classList.remove('hidden');
-  document.getElementById('scoreDisplay').textContent = data.totalScore + ' / ' + data.maxScore;
+  const { totalMax } = resolveScoreMaxes(data);
+  document.getElementById('scoreDisplay').textContent = data.totalScore + ' / ' + totalMax;
   document.getElementById('scoreBreak').textContent =
     (data.saved ? 'Submitted successfully.' : 'Warning: result may not have saved — inform your instructor.');
   document.getElementById('resultTableWrap').innerHTML = buildResultTableHtml(data);
@@ -978,9 +966,11 @@ function finishSubmit(data) {
 
 // Builds the score-summary table (no correct answers shown) — section by
 // section, plus MCQ and grand total. Shared by the on-screen view and print.
+// All "out of" values come from resolveScoreMaxes (the test definition this
+// browser already has), never from subtracting one score off another.
 function buildResultTableHtml(data) {
   const now = new Date();
-  const mcqMax = data.mcqMax != null ? data.mcqMax : data.maxScore - (data.codingMax || 0);
+  const { mcqMax, codingMax, totalMax } = resolveScoreMaxes(data);
   let html = `<table class="result-table">
     <tr><th>Test</th><td>${escapeHtml(TEST.title || testId)}</td></tr>
     <tr><th>Name</th><td>${escapeHtml(student.name)}</td></tr>
@@ -991,14 +981,15 @@ function buildResultTableHtml(data) {
     <tr><th>Section</th><th>Marks Obtained</th><th>Out Of</th></tr>
     <tr><td>Multiple Choice</td><td>${data.mcqScore}</td><td>${mcqMax}</td></tr>`;
   if (data.sectionTotals) {
-    (TEST.codingSections || []).forEach(sec => {
-      const totals = data.sectionTotals[sec.id];
-      if (totals) html += `<tr><td>${escapeHtml(sec.name)}</td><td>${totals.obtained}</td><td>${totals.max}</td></tr>`;
+    Object.keys(data.sectionTotals).forEach(sid => {
+      const sec = data.sectionTotals[sid];
+      const name = sec.name || ((TEST.codingSections || []).find(s => s.id === sid) || {}).name || sid;
+      html += `<tr><td>${escapeHtml(name)}</td><td>${sec.obtained}</td><td>${sec.max}</td></tr>`;
     });
   } else {
-    html += `<tr><td>Coding</td><td>${data.codingScore}</td><td>${data.codingMax != null ? data.codingMax : (data.maxScore - mcqMax)}</td></tr>`;
+    html += `<tr><td>Coding</td><td>${data.codingScore}</td><td>${codingMax}</td></tr>`;
   }
-  html += `<tr style="font-weight:700;"><td>Total</td><td>${data.totalScore}</td><td>${data.maxScore}</td></tr></table>`;
+  html += `<tr style="font-weight:700;"><td>Total</td><td>${data.totalScore}</td><td>${totalMax}</td></tr></table>`;
   return html;
 }
 
