@@ -103,9 +103,15 @@
 
   <div class="card hidden" id="passwordCard">
     <h2 id="testTitle">Enter test password</h2>
+    <div id="privateModeStatus" class="runner-status">Checking browser mode…</div>
+    <label id="privateModeFallbackRow" class="hidden" style="display:flex;align-items:flex-start;gap:8px;font-weight:400;margin:10px 0 14px;">
+      <input type="checkbox" id="privateModeConfirm" onchange="updateContinueButton();">
+      <span>I confirm I am using an Incognito/Private window (this browser doesn't let us verify that automatically).</span>
+    </label>
+    <button class="secondary" onclick="checkPrivateModeStatus()" id="pmRecheckBtn" style="margin-bottom:10px;">Check Again</button>
     <label for="pwInput">Password (given by your instructor)</label>
     <input type="password" id="pwInput" autocomplete="off">
-    <button onclick="checkPassword()" id="pwContinueBtn">Continue</button>
+    <button onclick="checkPassword()" id="pwContinueBtn" disabled>Continue</button>
     <div id="pwError" style="color:var(--warn);font-size:13px;margin-top:8px;"></div>
   </div>
 
@@ -217,6 +223,7 @@ async function init() {
     document.getElementById('loadingCard').classList.add('hidden');
     document.getElementById('passwordCard').classList.remove('hidden');
     initTheme();
+    checkPrivateModeStatus();
     checkLocalRunner();
   } catch (err) {
     document.getElementById('loadingCard').innerHTML =
@@ -300,6 +307,62 @@ function updateStartButtonState() {
   const ready = localRunnerAvailable && languageAvailable;
   startBtn.disabled = !ready;
   note.classList.toggle('hidden', ready);
+}
+
+// Best-effort private/Incognito browsing detection. Browsers deliberately
+// make this hard to detect (it would defeat the point of private mode if
+// websites could reliably tell), so this uses storage-quota and
+// localStorage-write heuristics that catch most cases on Chrome/Edge/Safari
+// but are NOT cryptographically certain and can change with browser updates.
+// Returns 'private', 'normal', or 'unknown' (detection not possible here).
+let privateModeResult = 'unknown';
+
+async function detectPrivateMode() {
+  try {
+    if (navigator.storage && navigator.storage.estimate) {
+      const est = await navigator.storage.estimate();
+      const quotaMB = (est.quota || 0) / (1024 * 1024);
+      if (quotaMB > 0 && quotaMB < 300) return 'private';
+      if (quotaMB >= 300) return 'normal';
+    }
+  } catch (e) {}
+  try {
+    const testKey = '__pm_test__';
+    localStorage.setItem(testKey, '1');
+    localStorage.removeItem(testKey);
+  } catch (e) {
+    return 'private'; // some Safari versions block localStorage writes in private mode
+  }
+  return 'unknown';
+}
+
+async function checkPrivateModeStatus() {
+  const statusEl = document.getElementById('privateModeStatus');
+  const fallbackRow = document.getElementById('privateModeFallbackRow');
+  statusEl.innerHTML = '<span class="spinner"></span>Checking browser mode… please wait.';
+  statusEl.className = 'runner-status';
+  privateModeResult = await detectPrivateMode();
+  if (privateModeResult === 'private') {
+    statusEl.textContent = '✓ Private/Incognito browsing detected.';
+    statusEl.className = 'runner-status runner-ok';
+    fallbackRow.classList.add('hidden');
+  } else if (privateModeResult === 'normal') {
+    statusEl.textContent = '⚠ This looks like a normal (non-private) browser window. Open this link in an Incognito/Private window (Ctrl+Shift+N) and reload the page.';
+    statusEl.className = 'runner-status runner-bad';
+    fallbackRow.classList.add('hidden'); // reliable negative result — no override
+  } else {
+    statusEl.textContent = '⚠ Could not automatically verify private browsing on this browser.';
+    statusEl.className = 'runner-status runner-bad';
+    fallbackRow.classList.remove('hidden');
+  }
+  updateContinueButton();
+}
+
+function updateContinueButton() {
+  const btn = document.getElementById('pwContinueBtn');
+  const ready = privateModeResult === 'private' ||
+    (privateModeResult === 'unknown' && document.getElementById('privateModeConfirm').checked);
+  btn.disabled = !ready;
 }
 
 async function checkPassword() {
@@ -704,7 +767,7 @@ async function runVisibleTests(qid) {
     resultEl.innerHTML = '<div class="result-line">No sample test cases provided for this question.</div>';
     return;
   }
-  statusEl.textContent = 'Test case is validating, running, kindly wait…';
+  statusEl.textContent = 'Running on your local JDK…';
   let html = '';
   for (let i = 0; i < q.visibleTests.length; i++) {
     const t = q.visibleTests[i];
@@ -858,12 +921,9 @@ async function gradeLocallyAndSubmit() {
   let codingScore = 0;
   const codingDetail = {};
   const btn = document.getElementById('finalSubmitBtn');
-  const codingQids = Object.keys(flat);
-  let codingQuestionNumber = 0;
-  for (const qid of codingQids) {
-    codingQuestionNumber++;
+  for (const qid in flat) {
     const { tests, marksPerQuestion } = flat[qid];
-    if (btn) btn.textContent = 'Grading coding question ' + codingQuestionNumber + ' of ' + codingQids.length + '. Kindly wait…';
+    if (btn) btn.textContent = 'Grading ' + qid + ' locally…';
     const code = state.codingCode[qid] || '';
     let results;
     try {
@@ -920,8 +980,7 @@ function finishSubmit(data) {
 // section, plus MCQ and grand total. Shared by the on-screen view and print.
 function buildResultTableHtml(data) {
   const now = new Date();
-  const codingMax = data.sectionTotals ? Object.values(data.sectionTotals).reduce((s, x) => s + x.max, 0) : (data.maxScore - data.mcqScore);
-  const mcqMax = data.maxScore - codingMax;
+  const mcqMax = data.mcqMax != null ? data.mcqMax : data.maxScore - (data.codingMax || 0);
   let html = `<table class="result-table">
     <tr><th>Test</th><td>${escapeHtml(TEST.title || testId)}</td></tr>
     <tr><th>Name</th><td>${escapeHtml(student.name)}</td></tr>
@@ -932,11 +991,12 @@ function buildResultTableHtml(data) {
     <tr><th>Section</th><th>Marks Obtained</th><th>Out Of</th></tr>
     <tr><td>Multiple Choice</td><td>${data.mcqScore}</td><td>${mcqMax}</td></tr>`;
   if (data.sectionTotals) {
-    Object.values(data.sectionTotals).forEach(sec => {
-      html += `<tr><td>${escapeHtml(sec.name)}</td><td>${sec.obtained}</td><td>${sec.max}</td></tr>`;
+    (TEST.codingSections || []).forEach(sec => {
+      const totals = data.sectionTotals[sec.id];
+      if (totals) html += `<tr><td>${escapeHtml(sec.name)}</td><td>${totals.obtained}</td><td>${totals.max}</td></tr>`;
     });
   } else {
-    html += `<tr><td>Coding</td><td>${data.codingScore}</td><td>${codingMax}</td></tr>`;
+    html += `<tr><td>Coding</td><td>${data.codingScore}</td><td>${data.codingMax != null ? data.codingMax : (data.maxScore - mcqMax)}</td></tr>`;
   }
   html += `<tr style="font-weight:700;"><td>Total</td><td>${data.totalScore}</td><td>${data.maxScore}</td></tr></table>`;
   return html;
