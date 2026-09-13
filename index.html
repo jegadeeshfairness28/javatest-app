@@ -704,7 +704,7 @@ async function runVisibleTests(qid) {
     resultEl.innerHTML = '<div class="result-line">No sample test cases provided for this question.</div>';
     return;
   }
-  statusEl.textContent = 'Running on your local JDK…';
+  statusEl.textContent = 'Test case is validating, running, kindly wait…';
   let html = '';
   for (let i = 0; i < q.visibleTests.length; i++) {
     const t = q.visibleTests[i];
@@ -858,9 +858,12 @@ async function gradeLocallyAndSubmit() {
   let codingScore = 0;
   const codingDetail = {};
   const btn = document.getElementById('finalSubmitBtn');
-  for (const qid in flat) {
+  const codingQids = Object.keys(flat);
+  let codingQuestionNumber = 0;
+  for (const qid of codingQids) {
+    codingQuestionNumber++;
     const { tests, marksPerQuestion } = flat[qid];
-    if (btn) btn.textContent = 'Grading ' + qid + ' locally…';
+    if (btn) btn.textContent = 'Grading coding question ' + codingQuestionNumber + ' of ' + codingQids.length + '. Kindly wait…';
     const code = state.codingCode[qid] || '';
     let results;
     try {
